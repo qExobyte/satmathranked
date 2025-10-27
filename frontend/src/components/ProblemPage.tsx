@@ -49,7 +49,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   useEffect(() => {
     if (showDesmos && !window.Desmos) {
       const script = document.createElement("script");
-      script.src = "https://www.desmos.com/api/v1.9/calculator.js";
+      script.src = `https://www.desmos.com/api/v1.9/calculator.js?apiKey=${import.meta.env.VITE_DESMOS_API_KEY}`;
       script.async = true;
       script.onload = () => initDesmos();
       document.body.appendChild(script);
