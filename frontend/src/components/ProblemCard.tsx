@@ -26,6 +26,8 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   onSubmit,
   loading = false,
 }) => {
+  const labels= ['A', 'B', 'C', 'D'];
+
   return (
     <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
       {/* Metadata */}
@@ -74,7 +76,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         </p>
 
         <div className="space-y-3">
-          {problem.options.map((option) => (
+          {problem.options.map((option, index) => (
             <button
               key={option}
               onClick={() => !disabled && onSelectAnswer?.(option)}
@@ -109,7 +111,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                   selectedAnswer === option &&
                   !feedback?.correct
                     ? '✗'
-                    : option}
+                    : labels[index]}
                 </div>
                 <span className="text-lg">{option}</span>
               </div>
