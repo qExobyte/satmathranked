@@ -116,6 +116,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20">
                   <div className="px-4 py-2 border-b border-gray-200">
                     <div className="font-semibold text-gray-900">{user.username}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
                     <div className="text-sm text-gray-600">ELO: {elo}</div>
                   </div>
                   <button

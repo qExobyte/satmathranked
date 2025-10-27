@@ -1,13 +1,9 @@
 import type { User, Problem, SubmitAnswerResponse } from '../types';
 
 export const api = {
-  login: async (): Promise<{ success: boolean; user: User }> => {
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return {
-      success: true,
-      user: { id: 1, username: "username", email: "email", elo: 500 }
-    };
+  login: async () => {
+    // We just redirect to the backend Google OAuth endpoint
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
   },
   
   getProblem: async (userId: number): Promise<Problem> => {
