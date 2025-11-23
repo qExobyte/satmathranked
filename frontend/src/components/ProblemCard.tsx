@@ -1,7 +1,9 @@
 // src/components/ProblemCard.tsx
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { Problem, SubmitAnswerResponse } from '../types';
+import renderMathInElement from 'katex/contrib/auto-render';
+import 'katex/dist/katex.min.css';
 
 interface ProblemCardProps {
   problem: Problem;
@@ -27,6 +29,34 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   loading = false,
 }) => {
   const labels= ['A', 'B', 'C', 'D'];
+
+  const questionRef = useRef<HTMLDivElement>(null);
+  const answerChoiceRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  function katexRender(textDiv: (HTMLDivElement | HTMLSpanElement)) {
+    renderMathInElement(textDiv, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    })
+  }
+
+  useEffect(() => {
+    console.log(problem.question)
+    if (questionRef.current) {
+      katexRender(questionRef.current)
+    }
+  }, [problem.question]);
+
+  useEffect(() => {
+      answerChoiceRefs.current.forEach(ref => {
+        if (ref) {
+          katexRender(ref)
+        }
+      })
+  }, [problem.options])
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
@@ -71,9 +101,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
 
       {/* Question */}
       <div className="mb-8">
-        <p className="text-xl text-gray-800 leading-relaxed mb-8">
+        <div
+            className="text-xl text-gray-800 leading-relaxed mb-8"
+            ref={questionRef}>
           {problem.question}
-        </p>
+        </div>
 
         <div className="space-y-3">
           {problem.options.map((option, index) => (
@@ -113,7 +145,15 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                     ? '✗'
                     : labels[index]}
                 </div>
-                <span className="text-lg">{option}</span>
+                <span
+                    className="text-lg"
+                    ref={choice => {
+                      answerChoiceRefs.current[index] = choice;
+                      return;
+                    }}
+                >
+                  {option}
+                </span>
               </div>
             </button>
           ))}

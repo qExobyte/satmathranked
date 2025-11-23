@@ -12,14 +12,14 @@ export const api = {
     const problems: Problem[] = [
       { 
         id: 1, 
-        question: "If 3x + 7 = 22, what is the value of x?",
+        question: "If $3x + 7 = 22$, what is the value of $x$?",
         category: "Algebra",
         difficulty: 600,
         options: [
-            "5" ,
-            "7" ,
-            "15" ,
-            "29" ,
+            "$5$",
+            "$7$",
+            "$15$",
+            "$29$",
         ],
         type: "mcq"
       },
