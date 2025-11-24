@@ -1,34 +1,43 @@
 // src/components/ProblemCard.tsx
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import type { Problem, SubmitAnswerResponse } from "../types";
+import type { Problem } from "../types";
 import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
 
 interface ProblemCardProps {
   problem: Problem;
-  selectedAnswer?: string | null;
-  feedback?: SubmitAnswerResponse | null;
-  showFeedback?: boolean;
-  disabled?: boolean;
-  animatedElo?: number;
-  onSelectAnswer?: (answer: string) => void;
-  onSubmit?: () => void;
-  loading?: boolean;
+  selectedAnswer: string | null;
+  firstSubmissionMade: boolean;
+  firstSubmissionCorrect: boolean | null;
+  eloUpdateAmount: number;
+  animatedElo: number;
+  onSelectAnswer: (answer: string) => void;
+  onSubmit: () => void;
+  onNext: () => void;
+  loading: boolean;
 }
 
 export const ProblemCard: React.FC<ProblemCardProps> = ({
   problem,
   selectedAnswer,
-  feedback,
-  showFeedback = false,
-  disabled = false,
+  firstSubmissionMade,
+  firstSubmissionCorrect,
+  eloUpdateAmount,
   animatedElo,
   onSelectAnswer,
   onSubmit,
-  loading = false,
+  onNext,
+  loading,
 }) => {
   const labels = ["A", "B", "C", "D"];
+  const [showEloAnimation, setShowEloAnimation] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(true);
+  const [prevFirstSubmissionMade, setPrevFirstSubmissionMade] = useState(false);
+  
+  // Track all submitted answers to keep their explanations visible
+  const [submittedAnswers, setSubmittedAnswers] = useState<Set<string>>(new Set());
+  const [currentAttemptAnswer, setCurrentAttemptAnswer] = useState<string | null>(null);
 
   const questionRef = useRef<HTMLDivElement>(null);
   const answerChoiceRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -44,7 +53,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   }
 
   useEffect(() => {
-    console.log(problem.problemText);
     if (questionRef.current) {
       katexRender(questionRef.current);
     }
@@ -58,158 +66,305 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
     });
   }, [problem.answerChoices]);
 
-  return (
-    <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
-      {/* Metadata */}
-      <div className="absolute top-6 right-6 flex gap-2">
-        <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
-          600
-        </div>
-      </div>
+  // Reset submitted answers when problem changes
+  useEffect(() => {
+    setSubmittedAnswers(new Set());
+    setCurrentAttemptAnswer(null);
+    setAnimationComplete(true);
+  }, [problem.id]);
 
-      {/* Feedback Overlay */}
-      {showFeedback && feedback && (
-        <div className="absolute inset-0 bg-white z-10 flex items-center justify-center animate-fadeIn">
-          <div className="text-center">
-            {feedback.correct ? (
-              <ArrowUp className="w-32 h-32 text-green-500 mx-auto mb-4" />
+  // Trigger ELO animation when first submission is made
+  useEffect(() => {
+    if (firstSubmissionMade && !prevFirstSubmissionMade) {
+      setShowEloAnimation(true);
+      setAnimationComplete(false);
+      // Add the first submitted answer to the set
+      if (selectedAnswer) {
+        setSubmittedAnswers(new Set([selectedAnswer]));
+        setCurrentAttemptAnswer(null);
+      }
+      const timer = setTimeout(() => {
+        setShowEloAnimation(false);
+        setAnimationComplete(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    setPrevFirstSubmissionMade(firstSubmissionMade);
+  }, [firstSubmissionMade, prevFirstSubmissionMade, selectedAnswer]);
+
+  // Determine the correct answer key
+  const correctAnswerKey = Object.keys(problem.answerChoices || {}).find(
+    (key) => problem.answerChoices[key][0] === "correct"
+  );
+
+  // For MCQ: check if user has found the correct answer (after first submission)
+  const mcqCorrectAnswerFound = !problem.isFrq && submittedAnswers.has(correctAnswerKey || "");
+
+  // Show Next button when:
+  // - FRQ: after first submission (regardless of correctness)
+  // - MCQ: after finding the correct answer (post first submission)
+  const showNextButton = firstSubmissionMade && (problem.isFrq || mcqCorrectAnswerFound);
+
+  // Handle subsequent submissions for MCQ (frontend only)
+  const handleSubsequentSubmit = () => {
+    if (currentAttemptAnswer && firstSubmissionMade) {
+      setSubmittedAnswers(prev => new Set([...prev, currentAttemptAnswer]));
+      setCurrentAttemptAnswer(null);
+    }
+  };
+
+  // Override onSelectAnswer to handle current attempt tracking
+  const handleSelectAnswer = (answer: string) => {
+    if (firstSubmissionMade && !mcqCorrectAnswerFound) {
+      // After first submission, just track the current attempt
+      setCurrentAttemptAnswer(answer);
+    } else if (!firstSubmissionMade) {
+      // Before first submission, use original behavior
+      onSelectAnswer(answer);
+    }
+  };
+
+  // Determine which submit handler to use
+  const handleSubmitClick = () => {
+    if (firstSubmissionMade) {
+      handleSubsequentSubmit();
+    } else {
+      onSubmit();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Slot Machine ELO Animation - Positioned Absolutely */}
+      {showEloAnimation && (
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full mb-6 z-50 pointer-events-none">
+          <div
+            className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-2xl ${
+              firstSubmissionCorrect
+                ? "bg-gradient-to-r from-green-500 to-green-600"
+                : "bg-gradient-to-r from-red-500 to-red-600"
+            } animate-slideDown`}
+          >
+            {firstSubmissionCorrect ? (
+              <ArrowUp className="w-8 h-8 text-white animate-bounce" />
             ) : (
-              <ArrowDown className="w-32 h-32 text-red-500 mx-auto mb-4" />
+              <ArrowDown className="w-8 h-8 text-white animate-bounce" />
             )}
-            <div className="text-6xl font-bold text-gray-900 mb-2">
-              {animatedElo ?? ""}
+            <div className="flex items-center gap-2">
+              <div className="text-5xl font-bold text-white overflow-hidden h-16 flex items-center">
+                <div className="animate-slotMachine">
+                  {animatedElo}
+                </div>
+              </div>
             </div>
-            <div
-              className={`text-xl font-semibold flex items-center justify-center gap-2 ${
-                feedback.correct ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {feedback.correct ? (
-                <ArrowUp className="w-5 h-5" />
-              ) : (
-                <ArrowDown className="w-5 h-5" />
-              )}
-              <span>{Math.abs(feedback.eloUpdate)}</span>
+            <div className="text-2xl font-bold text-white">
+              {eloUpdateAmount > 0 ? `+${eloUpdateAmount}` : eloUpdateAmount}
             </div>
           </div>
         </div>
       )}
 
-      {/* Question */}
-      <div className="mb-8">
-        <div
-          className="text-xl text-gray-800 leading-relaxed mb-8"
-          ref={questionRef}
-        >
-          {problem.problemText}
+      <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
+        {/* Metadata */}
+        <div className="absolute top-6 right-6 flex gap-2">
+          <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
+            {problem.difficulty}
+          </div>
         </div>
 
-        <div className="space-y-3">
-          {problem.isFrq ? (
-              <div className="space-y-3">
-    <input
-      value={selectedAnswer ?? ""}
-      onChange={(e) => !disabled && onSelectAnswer?.(e.target.value)}
-      disabled={disabled || showFeedback}
-      className={`w-full p-3 rounded-xl border-2 text-lg leading-snug transition-all h-12 resize-none
-        ${
-          showFeedback
-            ? feedback?.correct
-              ? "border-green-500 bg-green-50"
-              : "border-red-500 bg-red-50"
-            : "border-gray-300 hover:border-gray-400 bg-white"
-        }
-        ${showFeedback ? "cursor-not-allowed" : "cursor-text"}
-      `}
-      placeholder="Type your answer..."
-    />
+        {/* Question */}
+        <div className="mb-8">
+          <div
+            className="text-xl text-gray-800 leading-relaxed mb-8"
+            ref={questionRef}
+          >
+            {problem.problemText}
+          </div>
 
-    {showFeedback && feedback && (
-      <div
-        className={`text-center font-semibold text-lg ${
-          feedback.correct ? "text-green-600" : "text-red-600"
-        }`}
-      >
-        {feedback.correct ? "Correct!" : "Incorrect"}
-      </div>
-    )}
-  </div>
-          ) : (
-            <>
-              {problem.answerChoices &&
-                Object.keys(problem.answerChoices).map((option, index) => (
-                  <button
-                    key={option}
-                    onClick={() => !disabled && onSelectAnswer?.(option)}
-                    disabled={disabled || showFeedback}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      selectedAnswer === option
-                        ? "border-indigo-600 bg-indigo-50"
+          <div className="space-y-3">
+            {problem.isFrq ? (
+              <div className="space-y-3">
+                <input
+                  value={selectedAnswer ?? ""}
+                  onChange={(e) => !firstSubmissionMade && onSelectAnswer(e.target.value)}
+                  disabled={firstSubmissionMade}
+                  className={`w-full p-3 rounded-xl border-2 text-lg leading-snug transition-all h-12
+                    ${
+                      firstSubmissionMade
+                        ? firstSubmissionCorrect
+                          ? "border-green-500 bg-green-50 cursor-not-allowed"
+                          : "border-red-500 bg-red-50 cursor-not-allowed"
                         : "border-gray-300 hover:border-gray-400 bg-white"
-                    } ${
-                      showFeedback &&
-                      selectedAnswer === option &&
-                      !feedback?.correct
-                        ? "border-red-500 bg-red-50"
-                        : ""
-                    } ${
-                      showFeedback ? "cursor-not-allowed" : "cursor-pointer"
+                    }
+                  `}
+                  placeholder="Type your answer..."
+                />
+
+                {/* Show explanation after submission for FRQ */}
+                {firstSubmissionMade && correctAnswerKey && (
+                  <div
+                    className={`mt-4 p-4 rounded-lg border ${
+                      firstSubmissionCorrect
+                        ? "bg-green-50 border-green-200"
+                        : "bg-blue-50 border-blue-200"
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
-                          selectedAnswer === option
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-100 text-gray-700"
-                        } ${
-                          showFeedback &&
-                          selectedAnswer === option &&
-                          !feedback?.correct
-                            ? "bg-red-500 text-white"
-                            : ""
-                        }`}
-                      >
-                        {showFeedback &&
-                        selectedAnswer === option &&
-                        !feedback?.correct
-                          ? "✗"
-                          : labels[index]}
+                    {!firstSubmissionCorrect && (
+                      <div className="font-semibold text-blue-900 mb-2">
+                        Correct answer: {correctAnswerKey}
                       </div>
-                      <span
-                        className="text-lg"
-                        ref={(choice) => {
-                          answerChoiceRefs.current[index] = choice;
-                          return;
-                        }}
-                      >
-                        {option}
-                      </span>
+                    )}
+                    <div className="font-semibold text-green-900 mb-2">
+                      {firstSubmissionCorrect ? "Correct!" : "Explanation:"}
                     </div>
-                  </button>
-                ))}
-            </>
-          )}
+                    <div className="text-sm text-gray-800">
+                      {problem.answerChoices[correctAnswerKey][1]}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {problem.answerChoices &&
+                  Object.keys(problem.answerChoices).map((option, index) => {
+                    const isSelected = !firstSubmissionMade 
+                      ? selectedAnswer === option 
+                      : currentAttemptAnswer === option;
+                    const isCorrect = option === correctAnswerKey;
+                    const wasSubmitted = submittedAnswers.has(option);
+                    
+                    // Determine visual state
+                    const showAsCorrect = wasSubmitted && isCorrect;
+                    const showAsIncorrect = wasSubmitted && !isCorrect;
+
+                    return (
+                      <div key={option}>
+                        <button
+                          onClick={() => !mcqCorrectAnswerFound && handleSelectAnswer(option)}
+                          disabled={mcqCorrectAnswerFound}
+                          className={`w-full text-left p-4 rounded-xl border-2 transition ${
+                            showAsCorrect
+                              ? "border-green-500 bg-green-50"
+                              : showAsIncorrect
+                              ? "border-red-500 bg-red-50"
+                              : isSelected
+                              ? "border-indigo-600 bg-indigo-50"
+                              : "border-gray-300 hover:border-gray-400 bg-white"
+                          } ${
+                            mcqCorrectAnswerFound ? "cursor-not-allowed" : "cursor-pointer"
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
+                                showAsCorrect
+                                  ? "bg-green-500 text-white"
+                                  : showAsIncorrect
+                                  ? "bg-red-500 text-white"
+                                  : isSelected
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {showAsCorrect ? "✓" : showAsIncorrect ? "✗" : labels[index]}
+                            </div>
+                            <span
+                              className="text-lg"
+                              ref={(choice) => {
+                                answerChoiceRefs.current[index] = choice;
+                              }}
+                            >
+                              {option}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Show explanation for all submitted answers */}
+                        {wasSubmitted && problem.answerChoices[option][1] && (
+                          <div className={`mt-2 p-3 rounded-lg border ${
+                            isCorrect 
+                              ? "bg-green-50 border-green-200"
+                              : "bg-red-50 border-red-200"
+                          }`}>
+                            <div className={`font-semibold mb-1 ${
+                              isCorrect ? "text-green-900" : "text-red-900"
+                            }`}>
+                              {isCorrect ? "Correct!" : "Incorrect"}
+                            </div>
+                            <div className={`text-sm ${
+                              isCorrect ? "text-green-800" : "text-red-800"
+                            }`}>
+                              {problem.answerChoices[option][1]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Submit or Next Button */}
+        {showNextButton ? (
+          <button
+            onClick={onNext}
+            disabled={!animationComplete}
+            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next Problem
+          </button>
+        ) : (
+          <button
+            onClick={handleSubmitClick}
+            disabled={
+              loading || 
+              (!firstSubmissionMade && !selectedAnswer) ||
+              (firstSubmissionMade && !currentAttemptAnswer)
+            }
+            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          >
+            {loading ? "Submitting..." : "Submit"}
+          </button>
+        )}
       </div>
 
-      {onSubmit && (
-        <button
-          onClick={onSubmit}
-          disabled={!selectedAnswer || loading || showFeedback}
-          className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-        >
-          {loading ? "Submitting..." : "Submit"}
-        </button>
-      )}
-
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-in;
+        
+        @keyframes slotMachine {
+          0% {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .animate-slotMachine {
+          animation: slotMachine 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
       `}</style>
     </div>

@@ -34,7 +34,7 @@ const sampleProblems: Problem[] = [
       "$2x$": ["correct", "because..."],
       "$x$": ["incorrect", "because..."],
       "$x^2$": ["incorrect", "because..."],
-      "1": ["incorrect", "because..."],
+      "$1$": ["incorrect", "because..."],
     },
   },
   {
@@ -65,8 +65,8 @@ const sampleProblems: Problem[] = [
     problemText: "What is the value of $sin(90)$?",
     isFrq: false,
     answerChoices: {
-      "1": ["correct", "because..."],
-      "0": ["incorrect", "because..."],
+      "$1$": ["correct", "because..."],
+      "$0$": ["incorrect", "because..."],
       "$0.5$": ["incorrect", "because..."],
       "Undefined": ["incorrect", "because..."],
     },
@@ -86,15 +86,15 @@ const sampleProblems: Problem[] = [
     problemText: "What is the square root of $81$?",
     isFrq: false,
     answerChoices: {
-      "9": ["correct", "because..."],
-      "8": ["incorrect", "because..."],
-      "7": ["incorrect", "because..."],
-      "6": ["incorrect", "because..."],
+      "$9$": ["correct", "because..."],
+      "$8$": ["incorrect", "because..."],
+      "$7$": ["incorrect", "because..."],
+      "$6$": ["incorrect", "because..."],
     },
   },
 ];
 
-router.get("/sample", (req: Request, res: Response) => {
+router.get("/next", (req: Request, res: Response) => {
   // placeholder for fetching problem. given user id, need to compute topic ratings
   // and select a topic randomly weighted towards lower-rated topics
   // then select a problem from that topic around that rating

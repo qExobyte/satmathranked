@@ -8,7 +8,7 @@ export const api = {
 
   getProblem: async (userId: number): Promise<Problem> => {
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/problems/sample?userID=${userId}`
+      `${import.meta.env.VITE_API_URL}/problems/next?userId=${userId}`
     );
     const data = await res.json();
     return data.problem;
