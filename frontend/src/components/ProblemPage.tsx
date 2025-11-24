@@ -38,8 +38,8 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const desmosInstanceRef = useRef<any>(null);
   const desmosStateRef = useRef<any>(null);
 
-  const [desmosSize, setDesmosSize] = useState({ width: 500, height: 400 });
-  const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
+  const [, setDesmosSize] = useState({ width: 500, height: 400 });
+  const [, setFormulaSheetSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
     loadProblem();
@@ -233,7 +233,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                 minHeight={200}
                 bounds="window"
                 dragHandleClassName="drag-handle"
-                onResizeStop={(e, direction, ref, delta, position) => {
+                onResizeStop={(_e, _direction, ref) => {
                   setDesmosSize({
                     width: ref.offsetWidth,
                     height: ref.offsetHeight,
@@ -272,7 +272,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                 minHeight={300}
                 bounds="window"
                 dragHandleClassName="drag-handle-formula"
-                onResizeStop={(e, direction, ref, delta, position) => {
+                onResizeStop={(_e, _direction, ref) => {
                   setFormulaSheetSize({
                     width: ref.offsetWidth,
                     height: ref.offsetHeight,
