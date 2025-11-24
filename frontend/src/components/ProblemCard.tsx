@@ -1,9 +1,9 @@
 // src/components/ProblemCard.tsx
-import React, {useEffect, useRef} from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
-import type { Problem, SubmitAnswerResponse } from '../types';
-import renderMathInElement from 'katex/contrib/auto-render';
-import 'katex/dist/katex.min.css';
+import React, { useEffect, useRef } from "react";
+import { ArrowUp, ArrowDown } from "lucide-react";
+import type { Problem, SubmitAnswerResponse } from "../types";
+import renderMathInElement from "katex/contrib/auto-render";
+import "katex/dist/katex.min.css";
 
 interface ProblemCardProps {
   problem: Problem;
@@ -28,35 +28,35 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   onSubmit,
   loading = false,
 }) => {
-  const labels= ['A', 'B', 'C', 'D'];
+  const labels = ["A", "B", "C", "D"];
 
   const questionRef = useRef<HTMLDivElement>(null);
   const answerChoiceRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
-  function katexRender(textDiv: (HTMLDivElement | HTMLSpanElement)) {
+  function katexRender(textDiv: HTMLDivElement | HTMLSpanElement) {
     renderMathInElement(textDiv, {
       delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false },
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
       ],
       throwOnError: false,
-    })
+    });
   }
 
   useEffect(() => {
-    console.log(problem.problemText)
+    console.log(problem.problemText);
     if (questionRef.current) {
-      katexRender(questionRef.current)
+      katexRender(questionRef.current);
     }
   }, [problem.problemText]);
 
   useEffect(() => {
-      answerChoiceRefs.current.forEach(ref => {
-        if (ref) {
-          katexRender(ref)
-        }
-      })
-  }, [problem.answerChoices])
+    answerChoiceRefs.current.forEach((ref) => {
+      if (ref) {
+        katexRender(ref);
+      }
+    });
+  }, [problem.answerChoices]);
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
@@ -77,11 +77,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
               <ArrowDown className="w-32 h-32 text-red-500 mx-auto mb-4" />
             )}
             <div className="text-6xl font-bold text-gray-900 mb-2">
-              {animatedElo ?? ''}
+              {animatedElo ?? ""}
             </div>
             <div
               className={`text-xl font-semibold flex items-center justify-center gap-2 ${
-                feedback.correct ? 'text-green-600' : 'text-red-600'
+                feedback.correct ? "text-green-600" : "text-red-600"
               }`}
             >
               {feedback.correct ? (
@@ -98,61 +98,98 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
       {/* Question */}
       <div className="mb-8">
         <div
-            className="text-xl text-gray-800 leading-relaxed mb-8"
-            ref={questionRef}>
+          className="text-xl text-gray-800 leading-relaxed mb-8"
+          ref={questionRef}
+        >
           {problem.problemText}
         </div>
 
         <div className="space-y-3">
-          {problem.answerChoices && Object.keys(problem.answerChoices).map((option, index) => (
-            <button
-              key={option}
-              onClick={() => !disabled && onSelectAnswer?.(option)}
-              disabled={disabled || showFeedback}
-              className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                selectedAnswer === option
-                  ? 'border-indigo-600 bg-indigo-50'
-                  : 'border-gray-300 hover:border-gray-400 bg-white'
-              } ${
-                showFeedback &&
-                selectedAnswer === option &&
-                !feedback?.correct
-                  ? 'border-red-500 bg-red-50'
-                  : ''
-              } ${showFeedback ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
-                    selectedAnswer === option
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  } ${
-                    showFeedback &&
-                    selectedAnswer === option &&
-                    !feedback?.correct
-                      ? 'bg-red-500 text-white'
-                      : ''
-                  }`}
-                >
-                  {showFeedback &&
-                  selectedAnswer === option &&
-                  !feedback?.correct
-                    ? '✗'
-                    : labels[index]}
-                </div>
-                <span
-                    className="text-lg"
-                    ref={choice => {
-                      answerChoiceRefs.current[index] = choice;
-                      return;
-                    }}
-                >
-                  {option}
-                </span>
-              </div>
-            </button>
-          ))}
+          {problem.isFrq ? (
+              <div className="space-y-3">
+    <input
+      value={selectedAnswer ?? ""}
+      onChange={(e) => !disabled && onSelectAnswer?.(e.target.value)}
+      disabled={disabled || showFeedback}
+      className={`w-full p-3 rounded-xl border-2 text-lg leading-snug transition-all h-12 resize-none
+        ${
+          showFeedback
+            ? feedback?.correct
+              ? "border-green-500 bg-green-50"
+              : "border-red-500 bg-red-50"
+            : "border-gray-300 hover:border-gray-400 bg-white"
+        }
+        ${showFeedback ? "cursor-not-allowed" : "cursor-text"}
+      `}
+      placeholder="Type your answer..."
+    />
+
+    {showFeedback && feedback && (
+      <div
+        className={`text-center font-semibold text-lg ${
+          feedback.correct ? "text-green-600" : "text-red-600"
+        }`}
+      >
+        {feedback.correct ? "Correct!" : "Incorrect"}
+      </div>
+    )}
+  </div>
+          ) : (
+            <>
+              {problem.answerChoices &&
+                Object.keys(problem.answerChoices).map((option, index) => (
+                  <button
+                    key={option}
+                    onClick={() => !disabled && onSelectAnswer?.(option)}
+                    disabled={disabled || showFeedback}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      selectedAnswer === option
+                        ? "border-indigo-600 bg-indigo-50"
+                        : "border-gray-300 hover:border-gray-400 bg-white"
+                    } ${
+                      showFeedback &&
+                      selectedAnswer === option &&
+                      !feedback?.correct
+                        ? "border-red-500 bg-red-50"
+                        : ""
+                    } ${
+                      showFeedback ? "cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
+                          selectedAnswer === option
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        } ${
+                          showFeedback &&
+                          selectedAnswer === option &&
+                          !feedback?.correct
+                            ? "bg-red-500 text-white"
+                            : ""
+                        }`}
+                      >
+                        {showFeedback &&
+                        selectedAnswer === option &&
+                        !feedback?.correct
+                          ? "✗"
+                          : labels[index]}
+                      </div>
+                      <span
+                        className="text-lg"
+                        ref={(choice) => {
+                          answerChoiceRefs.current[index] = choice;
+                          return;
+                        }}
+                      >
+                        {option}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -162,7 +199,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
           disabled={!selectedAnswer || loading || showFeedback}
           className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
-          {loading ? 'Submitting...' : 'Submit'}
+          {loading ? "Submitting..." : "Submit"}
         </button>
       )}
 
