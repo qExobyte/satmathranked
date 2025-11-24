@@ -7,11 +7,11 @@ export interface User {
 
 export interface Problem {
     id: number;
-    question: string;
-    category: string;
     difficulty: number;
-    type: string;
-    options: string[];
+    topicId: string;
+    problemText: string;
+    isFrq: boolean;
+    answerChoices: { [key: string]: string[] }; // map of answer choice to [correctness, explanation]
 }
 
 export interface SubmitAnswerResponse {

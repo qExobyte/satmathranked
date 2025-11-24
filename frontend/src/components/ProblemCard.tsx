@@ -35,9 +35,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
           600
         </div>
-        <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
-          {problem.category}
-        </div>
       </div>
 
       {/* Feedback Overlay */}
@@ -62,7 +59,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
               ) : (
                 <ArrowDown className="w-5 h-5" />
               )}
-              <span>{problem.category}</span>
               <span>{Math.abs(feedback.eloUpdate)}</span>
             </div>
           </div>
@@ -72,11 +68,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
       {/* Question */}
       <div className="mb-8">
         <p className="text-xl text-gray-800 leading-relaxed mb-8">
-          {problem.question}
+          {problem.problemText}
         </p>
 
         <div className="space-y-3">
-          {problem.options.map((option, index) => (
+          {problem.answerChoices && Object.keys(problem.answerChoices).map((option, index) => (
             <button
               key={option}
               onClick={() => !disabled && onSelectAnswer?.(option)}
