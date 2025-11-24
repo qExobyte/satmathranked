@@ -4,9 +4,9 @@ import {
   FileText,
   Calculator,
   Diamond,
-  Minus,
   X,
 } from "lucide-react";
+import { Rnd } from "react-rnd";
 import type { User, Problem, SubmitAnswerResponse } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "../components/ProblemCard";
@@ -32,18 +32,14 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDesmos, setShowDesmos] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [showFormulaSheet, setShowFormulaSheet] = useState(false);
 
   const desmosContainerRef = useRef<HTMLDivElement | null>(null);
   const desmosInstanceRef = useRef<any>(null);
   const desmosStateRef = useRef<any>(null);
-  const windowRef = useRef<HTMLDivElement>(null);
 
-  const [size, setSize] = useState({ width: 500, height: 400 });
-  const sizeRef = useRef({ width: 500, height: 400 });
-  const isResizingRef = useRef(false);
-  const offsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
+  const [desmosSize, setDesmosSize] = useState({ width: 500, height: 400 });
+  const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
     loadProblem();
@@ -137,60 +133,6 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!windowRef.current) return;
-    isDraggingRef.current = true;
-    const rect = windowRef.current.getBoundingClientRect();
-    offsetRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDraggingRef.current && windowRef.current) {
-      const x = e.clientX - offsetRef.current.x;
-      const y = e.clientY - offsetRef.current.y;
-      windowRef.current.style.left = `${x}px`;
-      windowRef.current.style.top = `${y}px`;
-    } else if (isResizingRef.current && windowRef.current && desmosContainerRef.current) {
-      const dx = e.clientX - offsetRef.current.x;
-      const dy = e.clientY - offsetRef.current.y;
-      const newWidth = Math.max(300, sizeRef.current.width + dx);
-      const newHeight = Math.max(200, sizeRef.current.height + dy);
-
-      windowRef.current.style.width = `${newWidth}px`;
-      desmosContainerRef.current.style.height = `${newHeight}px`;
-
-      offsetRef.current = { x: e.clientX, y: e.clientY };
-      sizeRef.current = { width: newWidth, height: newHeight };
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (isResizingRef.current) {
-      setSize(sizeRef.current);
-    }
-    isDraggingRef.current = false;
-    isResizingRef.current = false;
-  };
-
-  const handleResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    isResizingRef.current = true;
-    sizeRef.current = size;
-    offsetRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  });
-
   return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
         {/* Header */}
@@ -219,6 +161,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
               <button
                   className="p-2 hover:bg-gray-100 rounded-lg transition"
                   title="Formula Sheet"
+                  onClick={() => setShowFormulaSheet(!showFormulaSheet)}
               >
                 <FileText className="w-6 h-6 text-gray-700" />
               </button>
@@ -277,28 +220,30 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
           ) : null}
         </div>
 
+        {/* Desmos Calculator Window */}
         {showDesmos && (
-            <div
-                ref={windowRef}
-                className="fixed z-40 bg-white shadow-2xl rounded-lg border border-gray-300"
-                style={{
-                  top: 50,
-                  left: 50,
-                  width: size.width,
+            <Rnd
+                default={{
+                  x: 50,
+                  y: 100,
+                  width: 500,
+                  height: 400,
                 }}
+                minWidth={300}
+                minHeight={200}
+                bounds="window"
+                dragHandleClassName="drag-handle"
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setDesmosSize({
+                    width: ref.offsetWidth,
+                    height: ref.offsetHeight,
+                  });
+                }}
+                style={{ zIndex: 40 }}
             >
-              <div
-                  className="flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none"
-                  onMouseDown={handleMouseDown}
-              >
-                <span className="font-semibold">Desmos Calculator</span>
-                <div className="flex gap-2">
-                  <button
-                      onClick={() => setIsMinimized(!isMinimized)}
-                      className="hover:bg-indigo-500 rounded p-1"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
+              <div className="bg-white shadow-2xl rounded-lg border border-gray-300 h-full flex flex-col">
+                <div className="drag-handle flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none">
+                  <span className="font-semibold">Desmos Calculator</span>
                   <button
                       onClick={() => setShowDesmos(false)}
                       className="hover:bg-indigo-500 rounded p-1"
@@ -306,19 +251,54 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+                <div
+                    ref={desmosContainerRef}
+                    className="flex-1 rounded-b-lg"
+                />
               </div>
-              <div
-                  ref={desmosContainerRef}
-                  className={`w-full rounded-b-lg ${
-                      isMinimized ? "h-0 overflow-hidden" : ""
-                  }`}
-                  style={{ height: isMinimized ? 0 : size.height }}
-              />
-              <div
-                  className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
-                  onMouseDown={handleResizeStart}
-              />
-            </div>
+            </Rnd>
+        )}
+
+        {/* Formula Sheet Window */}
+        {showFormulaSheet && (
+            <Rnd
+                default={{
+                  x: 600,
+                  y: 100,
+                  width: 800,
+                  height: 500,
+                }}
+                minWidth={400}
+                minHeight={300}
+                bounds="window"
+                dragHandleClassName="drag-handle-formula"
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setFormulaSheetSize({
+                    width: ref.offsetWidth,
+                    height: ref.offsetHeight,
+                  });
+                }}
+                style={{ zIndex: 40 }}
+            >
+              <div className="bg-white shadow-2xl rounded-lg border border-gray-300 h-full flex flex-col">
+                <div className="drag-handle-formula flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none">
+                  <span className="font-semibold">Formula Sheet</span>
+                  <button
+                      onClick={() => setShowFormulaSheet(false)}
+                      className="hover:bg-indigo-500 rounded p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 rounded-b-lg overflow-auto">
+                  <img
+                      src="/assets/formula-sheet.jpg"
+                      alt="Formula Sheet"
+                      className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            </Rnd>
         )}
       </div>
   );
