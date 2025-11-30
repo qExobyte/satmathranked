@@ -5,9 +5,9 @@ import {
   FileText,
   Calculator,
   Diamond,
-  Minus,
   X,
 } from "lucide-react";
+import { Rnd } from "react-rnd";
 import type { User, Problem, SubmitAnswerResponse } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "./ProblemCard";
@@ -31,7 +31,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [animatedElo, setAnimatedElo] = useState(user.elo);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDesmos, setShowDesmos] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [showFormulaSheet, setShowFormulaSheet] = useState(false);
 
   // New state for tracking submission flow
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
@@ -41,13 +41,9 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const desmosContainerRef = useRef<HTMLDivElement | null>(null);
   const desmosInstanceRef = useRef<any>(null);
   const desmosStateRef = useRef<any>(null);
-  const windowRef = useRef<HTMLDivElement>(null);
 
-  const [size, setSize] = useState({ width: 500, height: 400 });
-  const sizeRef = useRef({ width: 500, height: 400 });
-  const isResizingRef = useRef(false);
-  const offsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
+  const [, setDesmosSize] = useState({ width: 500, height: 400 });
+  const [, setFormulaSheetSize] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
     loadProblem();
@@ -291,49 +287,86 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
         ) : null}
       </div>
 
-      {showDesmos && (
-        <div
-          ref={windowRef}
-          className="fixed z-40 bg-white shadow-2xl rounded-lg border border-gray-300"
-          style={{
-            top: 50,
-            left: 50,
-            width: size.width,
-          }}
-        >
-          <div
-            className="flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none"
-            onMouseDown={handleMouseDown}
-          >
-            <span className="font-semibold">Desmos Calculator</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="hover:bg-indigo-500 rounded p-1"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowDesmos(false)}
-                className="hover:bg-indigo-500 rounded p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div
-            ref={desmosContainerRef}
-            className={`w-full rounded-b-lg ${
-              isMinimized ? "h-0 overflow-hidden" : ""
-            }`}
-            style={{ height: isMinimized ? 0 : size.height }}
-          />
-          <div
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
-            onMouseDown={handleResizeStart}
-          />
-        </div>
-      )}
-    </div>
+        {/* Desmos Calculator Window */}
+        {showDesmos && (
+            <Rnd
+                default={{
+                  x: 50,
+                  y: 100,
+                  width: 500,
+                  height: 400,
+                }}
+                minWidth={300}
+                minHeight={200}
+                bounds="window"
+                dragHandleClassName="drag-handle"
+                onResizeStop={(_e, _direction, ref) => {
+                  setDesmosSize({
+                    width: ref.offsetWidth,
+                    height: ref.offsetHeight,
+                  });
+                }}
+                style={{ zIndex: 40 }}
+            >
+              <div className="bg-white shadow-2xl rounded-lg border border-gray-300 h-full flex flex-col">
+                <div className="drag-handle flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none">
+                  <span className="font-semibold">Desmos Calculator</span>
+                  <button
+                      onClick={() => setShowDesmos(false)}
+                      className="hover:bg-indigo-500 rounded p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div
+                    ref={desmosContainerRef}
+                    className="flex-1 rounded-b-lg"
+                />
+              </div>
+            </Rnd>
+        )}
+
+        {/* Formula Sheet Window */}
+        {showFormulaSheet && (
+            <Rnd
+                default={{
+                  x: 600,
+                  y: 100,
+                  width: 800,
+                  height: 500,
+                }}
+                minWidth={400}
+                minHeight={300}
+                bounds="window"
+                dragHandleClassName="drag-handle-formula"
+                onResizeStop={(_e, _direction, ref) => {
+                  setFormulaSheetSize({
+                    width: ref.offsetWidth,
+                    height: ref.offsetHeight,
+                  });
+                }}
+                style={{ zIndex: 40 }}
+            >
+              <div className="bg-white shadow-2xl rounded-lg border border-gray-300 h-full flex flex-col">
+                <div className="drag-handle-formula flex items-center justify-between bg-indigo-600 text-white px-3 py-2 rounded-t-lg cursor-move select-none">
+                  <span className="font-semibold">Formula Sheet</span>
+                  <button
+                      onClick={() => setShowFormulaSheet(false)}
+                      className="hover:bg-indigo-500 rounded p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 rounded-b-lg overflow-auto">
+                  <img
+                      src="/assets/formula-sheet.jpg"
+                      alt="Formula Sheet"
+                      className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            </Rnd>
+        )}
+      </div>
   );
 };
