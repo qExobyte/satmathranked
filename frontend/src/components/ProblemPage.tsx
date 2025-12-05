@@ -44,8 +44,10 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const desmosInstanceRef = useRef<any>(null);
   const desmosStateRef = useRef<any>(null);
 
-  const [, setDesmosSize] = useState({ width: 500, height: 400 });
-  const [, setFormulaSheetSize] = useState({ width: 800, height: 600 });
+  const [desmosSize, setDesmosSize] = useState({ width: 500, height: 400 });
+  const [desmosPosition, setDesmosPosition] = useState({ x: 50, y: 100 });
+  const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
+  const [formulaSheetPosition, setFormulaSheetPosition] = useState({x: 50, y: 100});
 
   useEffect(() => {
     loadProblem();
@@ -242,16 +244,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
       {/* Desmos Calculator Window */}
       {showDesmos && (
         <Rnd
-          default={{
-            x: 50,
-            y: 100,
-            width: 500,
-            height: 400,
-          }}
+          position = {desmosPosition}
+          size={desmosSize}
           minWidth={300}
           minHeight={200}
           bounds="window"
           dragHandleClassName="drag-handle"
+          onDragStop = {(_e, d) => {
+            setDesmosPosition({x : d.x, y: d.y})
+          }}
           onResizeStop={(_e, _direction, ref) => {
             setDesmosSize({
               width: ref.offsetWidth,
@@ -278,16 +279,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
       {/* Formula Sheet Window */}
       {showFormulaSheet && (
         <Rnd
-          default={{
-            x: 600,
-            y: 100,
-            width: 800,
-            height: 500,
-          }}
+          size={formulaSheetSize}
+          position={formulaSheetPosition}
           minWidth={400}
           minHeight={300}
           bounds="window"
           dragHandleClassName="drag-handle-formula"
+          onDragStop = { (_e, d) => {
+            setFormulaSheetPosition({x: d.x, y: d.y})
+          }}
           onResizeStop={(_e, _direction, ref) => {
             setFormulaSheetSize({
               width: ref.offsetWidth,

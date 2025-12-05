@@ -14,7 +14,7 @@ interface Problem {
   answerChoices: Record<string, string[]>;
 }
 
-//placeholder problem data
+// placeholder problem data
 const sampleProblems: Problem[] = [
   {
     id: 1,
