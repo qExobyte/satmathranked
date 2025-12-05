@@ -2,8 +2,8 @@
   "dev": {
     "driver": "mysql",
     "database": "sat_ranked",
-    "user": "root",
-    "password": "root",
+    "user": "sat_dev",
+    "password": "password",
     "socketPath": "/tmp/mysql.sock"
   }
 }
