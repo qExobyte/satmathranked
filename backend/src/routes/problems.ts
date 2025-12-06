@@ -98,23 +98,21 @@ router.get("/next", async (req: Request, res: Response) => {
 
   const [topicRows] = await pool.query(
       `SELECT id, name, weight
-      FROM TOPICS ORDER BY id`
+       FROM TOPICS
+       ORDER BY id`
   );
   const topics = topicRows as Topic[];
 
-  for (const topicId of topicIds) {
-    const rating = computeTopicRating(userId, topicId);
   const [historyRows] = await pool.query(
-      `SELECT 
-        ph.problem_id,
-        ph.is_correct,
-        ph.timestamp,
-        p.topic_id,
-        p.difficulty
-      FROM PROBLEM_HISTORY ph
-      JOIN PROBLEMS p ON ph.problem_id = p.id
-      WHERE ph.user_id = ?
-      ORDER BY ph.timestamp ASC`,
+      `SELECT ph.problem_id,
+              ph.is_correct,
+              ph.timestamp,
+              p.topic_id,
+              p.difficulty
+       FROM PROBLEM_HISTORY ph
+              JOIN PROBLEMS p ON ph.problem_id = p.id
+       WHERE ph.user_id = ?
+       ORDER BY ph.timestamp ASC`,
       [userId]
   );
   const history = historyRows as TopicHistoryRow[];
@@ -129,7 +127,7 @@ router.get("/next", async (req: Request, res: Response) => {
   }
 
   //select topic
-  const selectedTopicID = Number(weightedChoice(topicRatings.map((r) => 1 / (r**2)))); //weight towards lower ratings
+  const selectedTopicID = Number(weightedChoice(topicRatings.map((r) => 1 / (r ** 2)))); //weight towards lower ratings
   const selectedTopicRating = Number(topicRatings[selectedTopicID]);
 
   //sample problem rating
@@ -138,18 +136,16 @@ router.get("/next", async (req: Request, res: Response) => {
   //SQL query to fetch problem closest to sampledRating in selectedTopicID goes here
   //placeholder: filter sampleProblems
   const [problemRows] = await pool.query(
-      `SELECT 
-        id,
-        difficulty,
-        topic_id as topicId,
-        problem_text as problemText,
-        is_frq as isFrq,
-        answer_choices as answerChoices,
-        image_url as imageUrl
-      FROM PROBLEMS
-      WHERE topic_id = ?
-      ORDER BY ABS(difficulty - ?) ASC
-      LIMIT 1`,
+      `SELECT id,
+              difficulty,
+              topic_id       as topicId,
+              problem_text   as problemText,
+              is_frq         as isFrq,
+              answer_choices as answerChoices,
+              image_url      as imageUrl
+       FROM PROBLEMS
+       WHERE topic_id = ?
+       ORDER BY ABS(difficulty - ?) ASC LIMIT 1`,
       [selectedTopicID, sampledRating]
   );
 
@@ -160,6 +156,7 @@ router.get("/next", async (req: Request, res: Response) => {
       message: "No problems found for this topic"
     });
   }
+};
 
 router.post("/submit", (req: Request, res: Response) => {
   const { userId, problemId, answerChoice } = req.body as {
