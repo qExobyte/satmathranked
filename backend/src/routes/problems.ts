@@ -2,17 +2,11 @@ import express from "express";
 import type { Request, Response } from "express";
 import { computeElo, computeTopicRating } from "../utils/elo.js";
 import { weightedChoice, sampleRating } from "../utils/probUtils.js";
+import pool from '../db-config.js';
+import type {Problem, Topic, TopicHistoryRow} from "../types/database.js";
 
 const router = express.Router();
 
-interface Problem {
-  id: number;
-  difficulty: number;
-  topicId: number;
-  problemText: string;
-  isFrq: boolean;
-  answerChoices: Record<string, string[]>;
-}
 
 // placeholder problem data
 const sampleProblems: Problem[] = [
@@ -94,43 +88,78 @@ const sampleProblems: Problem[] = [
   },
 ];
 
-router.get("/next", (req: Request, res: Response) => {
+router.get("/next", async (req: Request, res: Response) => {
   // placeholder for fetching problem. given user id, need to compute topic ratings
   // and select a topic randomly weighted towards lower-rated topics
   // then select a problem from that topic around that rating
   // need to also query topicIDs
 
   const userId = Number(req.query.userId);
-  const topicIds = [1, 2, 3]; // placeholder topic IDs
-  const topicRatings: number[] = [];
+
+  const [topicRows] = await pool.query(
+      `SELECT id, name, weight
+      FROM TOPICS ORDER BY id`
+  );
+  const topics = topicRows as Topic[];
 
   for (const topicId of topicIds) {
     const rating = computeTopicRating(userId, topicId);
+  const [historyRows] = await pool.query(
+      `SELECT 
+        ph.problem_id,
+        ph.is_correct,
+        ph.timestamp,
+        p.topic_id,
+        p.difficulty
+      FROM PROBLEM_HISTORY ph
+      JOIN PROBLEMS p ON ph.problem_id = p.id
+      WHERE ph.user_id = ?
+      ORDER BY ph.timestamp ASC`,
+      [userId]
+  );
+  const history = historyRows as TopicHistoryRow[];
+
+
+  const topicRatings = []
+  for (const topic of topics) {
+    const topicId = topic.id
+    const topicHistory = history.filter(h => h.topic_id == topicId);
+    const rating = computeTopicRating(userId, topicHistory);
     topicRatings.push(rating);
   }
 
   //select topic
-  const topicIndex = Number(weightedChoice(topicRatings.map((r) => 1 / r))); //weight towards lower ratings
-  const selectedTopicID = topicIds[topicIndex];
-  const selectedTopicRating = Number(topicRatings[topicIndex]);
+  const selectedTopicID = Number(weightedChoice(topicRatings.map((r) => 1 / (r**2)))); //weight towards lower ratings
+  const selectedTopicRating = Number(topicRatings[selectedTopicID]);
 
   //sample problem rating
   const sampledRating = sampleRating(selectedTopicRating);
 
   //SQL query to fetch problem closest to sampledRating in selectedTopicID goes here
   //placeholder: filter sampleProblems
-  const candidateProblems = sampleProblems.filter(
-    (p) => p.topicId === selectedTopicID
+  const [problemRows] = await pool.query(
+      `SELECT 
+        id,
+        difficulty,
+        topic_id as topicId,
+        problem_text as problemText,
+        is_frq as isFrq,
+        answer_choices as answerChoices,
+        image_url as imageUrl
+      FROM PROBLEMS
+      WHERE topic_id = ?
+      ORDER BY ABS(difficulty - ?) ASC
+      LIMIT 1`,
+      [selectedTopicID, sampledRating]
   );
-  candidateProblems.sort(
-    (a, b) =>
-      Math.abs(a.difficulty - sampledRating) -
-      Math.abs(b.difficulty - sampledRating)
-  );
-  const selectedProblem = candidateProblems[0];
 
-  res.json({ success: true, problem: selectedProblem });
-});
+  const problems = problemRows as Problem[];
+  if (problems.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No problems found for this topic"
+    });
+  }
 
 router.post("/submit", (req: Request, res: Response) => {
   const { userId, problemId, answerChoice } = req.body as {
@@ -146,12 +175,12 @@ router.post("/submit", (req: Request, res: Response) => {
   }
 
   const choiceKey = String(answerChoice);
-  const isCorrect = problem.answerChoices[choiceKey]?.[0] === "correct";
+  const isCorrect = problem.answer_choices[choiceKey]?.[0] === "correct";
 
   //SQL query to submit problem history goes here
   //Also update problem elo. For now ill just send the elo update to the frontend
   //mock logic:
-  const userTopicElo = computeTopicRating(userId, problem.topicId);
+  const userTopicElo = computeTopicRating(userId, problem.topic_id);
   const newUserTopicElo = computeElo(
     userTopicElo,
     problem.difficulty,

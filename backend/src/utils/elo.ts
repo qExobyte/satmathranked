@@ -1,3 +1,5 @@
+import type {TopicHistoryRow} from "../types/database.js";
+
 const BASE_RATING = 500;
 const SAMPLE_HISTORY = [
     { problem_id: 1, problem_rating: 450, is_correct: true },
@@ -20,21 +22,16 @@ function computeElo (
     return newRating;
 };
 
-function computeTopicRating(userId: number, topicId: number): number {
-    /* placeholder function to compute topic rating for a user 
-    real SQL query: CALL get_user_topic_history(userID, topicID);
-    */
-   const sample_data = SAMPLE_HISTORY.filter(entry => entry.problem_id === topicId); //dummy filter by topicID
-
+function computeTopicRating(userId: number, topicHistory: TopicHistoryRow[]): number {
     let rating = BASE_RATING;
 
-    for (const entry of sample_data) {
-        rating = computeElo(rating, entry.problem_rating, entry.is_correct);
+    for (const problem of topicHistory) {
+        rating = computeElo(rating, problem.difficulty, problem.is_correct);
     }
     return rating;
 };
 
-function computeOverallRating (userId: number): number {
+function computeOverallRating (userId: number, history: TopicHistoryRow): number {
     /* placeholder function to compute overall rating for a user 
     real SQL query: CALL get_user_topic_history(userID, topicID); for each topic,
     then compute topic ratings and do weighted average
