@@ -156,7 +156,7 @@ router.get("/next", async (req: Request, res: Response) => {
       message: "No problems found for this topic"
     });
   }
-};
+});
 
 router.post("/submit", (req: Request, res: Response) => {
   const { userId, problemId, answerChoice } = req.body as {
