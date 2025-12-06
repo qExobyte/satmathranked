@@ -1,0 +1,57 @@
+[
+    {
+        "id": 0,
+        "name": "Systems of Equations & Inequalities",
+        "weight": 0.18
+    },
+    {
+        "id": 1,
+        "name": "Linear Functions",
+        "weight": 0.09
+    },
+    {
+        "id": 2,
+        "name": "Exponential Functions",
+        "weight": 0.09
+    },
+    {
+        "id": 3,
+        "name": "Algebra",
+        "weight": 0.09
+    },
+    {
+        "id": 4,
+        "name": "Sampling",
+        "weight": 0.09
+    },
+    {
+        "id": 5,
+        "name": "Quadratic Equations",
+        "weight": 0.09
+    },
+    {
+        "id": 6,
+        "name": "Quadratic Functions",
+        "weight": 0.09
+    },
+    {
+        "id": 7,
+        "name": "Triangles",
+        "weight": 0.07
+    },
+    {
+        "id": 8,
+        "name": "Circles",
+        "weight": 0.07
+    },
+    {
+        "id": 9,
+        "name": "Percentages",
+        "weight": 0.07
+    },
+    {
+        "id": 10,
+        "name": "Area, Surface Area & Volume",
+        "weight": 0.07
+    }
+]
