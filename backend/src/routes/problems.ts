@@ -1,9 +1,9 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { computeElo, computeTopicRating } from "../utils/elo.js";
-import { weightedChoice, sampleRating } from "../utils/probUtils.js";
-import pool from '../db-config.js';
-import type {Problem, Topic, TopicHistoryRow} from "../types/database.js";
+import { computeElo, computeTopicElo } from "../utils/elo.js";
+import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
+import pool from "../db_config.js";
+import type {Problem, Topic, TopicHistoryRow} from "../types/types.js";
 
 const router = express.Router();
 
@@ -103,12 +103,13 @@ router.get("/next", async (req: Request, res: Response) => {
   );
   const topics = topicRows as Topic[];
 
+  // problem history + the topic id
   const [historyRows] = await pool.query(
       `SELECT ph.problem_id,
               ph.is_correct,
               ph.timestamp,
               p.topic_id,
-              p.difficulty
+              ph.problem_rating
        FROM PROBLEM_HISTORY ph
               JOIN PROBLEMS p ON ph.problem_id = p.id
        WHERE ph.user_id = ?
@@ -117,21 +118,25 @@ router.get("/next", async (req: Request, res: Response) => {
   );
   const history = historyRows as TopicHistoryRow[];
 
-
-  const topicRatings = []
+  // for each topic id index -> associated elo with each topic
+  console.log("Topics", topics)
+  const topicElos = []
   for (const topic of topics) {
     const topicId = topic.id
     const topicHistory = history.filter(h => h.topic_id == topicId);
-    const rating = computeTopicRating(userId, topicHistory);
-    topicRatings.push(rating);
+    const topicElo = computeTopicElo(userId, topicHistory);
+    topicElos.push(topicElo);
+    console.log("Topic ", topic.name, " Elo: ", topicElo);
   }
 
   //select topic
-  const selectedTopicID = Number(weightedChoice(topicRatings.map((r) => 1 / (r ** 2)))); //weight towards lower ratings
-  const selectedTopicRating = Number(topicRatings[selectedTopicID]);
+  const weights = topicElos.map((r) => 1 / (r ** 2));
+  const selectedTopicIndex = weightedChoice(weights);
+  const selectedTopicID = topics[selectedTopicIndex].id;
+  const selectedTopicElo = topicElos[selectedTopicIndex];
 
   //sample problem rating
-  const sampledRating = sampleRating(selectedTopicRating);
+  const chosenDifficulty = chooseDifficulty(selectedTopicElo);
 
   //SQL query to fetch problem closest to sampledRating in selectedTopicID goes here
   //placeholder: filter sampleProblems
@@ -146,7 +151,7 @@ router.get("/next", async (req: Request, res: Response) => {
        FROM PROBLEMS
        WHERE topic_id = ?
        ORDER BY ABS(difficulty - ?) ASC LIMIT 1`,
-      [selectedTopicID, sampledRating]
+      [selectedTopicID, chosenDifficulty]
   );
 
   const problems = problemRows as Problem[];
@@ -177,7 +182,7 @@ router.post("/submit", (req: Request, res: Response) => {
   //SQL query to submit problem history goes here
   //Also update problem elo. For now ill just send the elo update to the frontend
   //mock logic:
-  const userTopicElo = computeTopicRating(userId, problem.topic_id);
+  const userTopicElo = computeTopicElo(userId, problem.topic_id);
   const newUserTopicElo = computeElo(
     userTopicElo,
     problem.difficulty,

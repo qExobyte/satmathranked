@@ -1,4 +1,4 @@
-import type {TopicHistoryRow} from "../types/database.js";
+import type {TopicHistoryRow} from "../types/types.js";
 
 const BASE_RATING = 500;
 const SAMPLE_HISTORY = [
@@ -22,7 +22,7 @@ function computeElo (
     return newRating;
 };
 
-function computeTopicRating(userId: number, topicHistory: TopicHistoryRow[]): number {
+function computeTopicElo(userId: number, topicHistory: TopicHistoryRow[]): number {
     let rating = BASE_RATING;
 
     for (const problem of topicHistory) {
@@ -44,7 +44,7 @@ function computeOverallRating (userId: number, history: TopicHistoryRow): number
     for (let i = 0; i < topicIds.length; i++) {
         // compute each rating on the fly and default to 0 if undefined
         const topicId = topicIds[i] ?? 0;
-        const rating = computeTopicRating(userId, topicId) ?? 0;
+        const rating = computeTopicElo(userId, topicId) ?? 0;
         const weight = topicWeights[i] ?? 0;
         overallRating += rating * weight;
     }
@@ -52,4 +52,4 @@ function computeOverallRating (userId: number, history: TopicHistoryRow): number
 };
 
 
-export { computeTopicRating, computeOverallRating, computeElo };
+export { computeTopicElo, computeOverallRating, computeElo };
