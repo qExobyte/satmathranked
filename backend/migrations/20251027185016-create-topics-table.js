@@ -15,7 +15,7 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db) {
-  return db.createTable('topics', {
+  return db.createTable('TOPICS', {
     columns: {
       id: { type: 'int', primaryKey: true, autoIncrement: true },
       name: { type: 'string', length: 255, notNull: true },
@@ -27,7 +27,7 @@ exports.up = function(db) {
 };
 
 exports.down = function(db) {
-  return db.dropTable('topics');
+  return db.dropTable('TOPICS');
 };
 
 exports._meta = {
