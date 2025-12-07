@@ -248,7 +248,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                 <button
                     onClick={() => setShowCategoryMenu(!showCategoryMenu)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition"
-                    title="Category ELO Breakdown"
+                    title="Topic ELO Breakdown"
                 >
                   <List className="w-5 h-5 text-gray-700" />
                 </button>

@@ -2,8 +2,8 @@ import express from "express";
 import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import pool from "../db_config.js";
-import type {User} from "../types/types.js";
-import {computeUserElo} from "../utils/elo.js";
+import type {Topic, User} from "../types/types.js";
+import {computeTopicEloList, computeUserElo} from "../utils/elo.js";
 
 const router = express.Router();
 
@@ -72,8 +72,20 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             user = (newUsers as User[])[0];
         }
 
-        // we need to compute our elo initially on login (not just after every problem!)
-        const elo = await computeUserElo(user.id)
+        // call backend methods for computing user and topic elos
+        const elo = await computeUserElo(user.id);
+        const topicElos = await computeTopicEloList(user.id);
+
+        const [topicRows] = await pool.query(
+            `SELECT id, name FROM TOPICS ORDER BY id`
+        );
+        const topics = topicRows as Topic[];
+
+        const topicEloData = topics.map((topic, index) => ({
+            topicId: topic.id,
+            topicName: topic.name,
+            elo: Math.round(topicElos[index])
+        }));
 
         // Change this to whatever info we actually want
         const userInfo = {

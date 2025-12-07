@@ -1,6 +1,6 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { computeElo, computeTopicElo } from "../utils/elo.js";
+import { computeElo, computeTopicElo, computeTopicEloList } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import pool from "../db_config.js";
 import type { Problem, Topic, TopicHistoryRow } from "../types/types.js";

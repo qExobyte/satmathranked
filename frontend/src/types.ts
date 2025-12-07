@@ -3,6 +3,11 @@ export interface User {
     username: string;
     email: string;
     elo: number;
+    topicEloData: Array<{
+        topicId: number;
+        topicName: string;
+        elo: number;
+    }>;
 }
 
 export interface Problem {
