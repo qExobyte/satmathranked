@@ -16,10 +16,23 @@ export interface Problem {
     topicId: string;
     problemText: string;
     isFrq: boolean;
-    answerChoices: { [key: string]: string[] }; // map of answer choice to [correctness, explanation]
+    starred: boolean;
+    answerChoices: Record<string, [boolean, string]> // map of answer choice to [correctness, explanation]
 }
 
 export interface SubmitAnswerResponse {
     eloUpdate: number;
     correct: boolean;
+}
+
+export interface ProblemHistoryItem {
+  id: number;
+  problemId: number;
+  problemText: string;
+  difficulty: string;
+  userAnswer: string;
+  correct: boolean;
+  answerChoices: Record<string, [boolean, string]>
+  timestamp: string;
+  starred: boolean;
 }

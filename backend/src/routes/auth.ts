@@ -71,7 +71,6 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             );
             user = (newUsers as User[])[0];
         }
-        console.log(user);
 
         // call backend methods for computing user and topic elos
         const elo = await computeUserElo(user.id);
@@ -99,7 +98,6 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             //picture: payload.picture,
             //email_verified: payload.email_verified
         };
-        console.log("User Info: ", userInfo);
 
         // Redirect to frontend with user info (name and email)
         //If we want we can instead make a jwt and send that if we want to do session based

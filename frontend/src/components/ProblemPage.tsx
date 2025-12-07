@@ -9,11 +9,13 @@ import {
   List,
   ChevronDown,
   ChevronRight,
+  History,
 } from "lucide-react";
 import { Rnd } from "react-rnd";
 import type { User, Problem, SubmitAnswerResponse } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "./ProblemCard";
+import { ProblemHistory } from "../components/ProblemHistory";
 
 declare global {
   interface Window {
@@ -34,10 +36,13 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [animatedElo, setAnimatedElo] = useState(user.elo);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showDesmos, setShowDesmos] = useState(false);
   const [showFormulaSheet, setShowFormulaSheet] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
 
-  // New state for tracking submission flow
+  // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
   const [firstSubmissionCorrect, setFirstSubmissionCorrect] = useState<
       boolean | null
@@ -52,6 +57,69 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [desmosPosition, setDesmosPosition] = useState({ x: 50, y: 100 });
   const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
   const [formulaSheetPosition, setFormulaSheetPosition] = useState({x: 50, y: 100});
+
+  const categoryStructure = [
+    {
+      name: "Algebra & Functions",
+      subtopics: [
+        { name: "Algebra", elo: user.topicElo?.algebra || elo },
+        { name: "Equivalent Expressions", elo: user.topicElo?.equivalentExpressions || elo },
+        { name: "Solving for Constants", elo: user.topicElo?.solvingForConstants || elo },
+        { name: "Translating English to Math", elo: user.topicElo?.translatingEnglishToMath || elo },
+        { name: "Linear Functions", elo: user.topicElo?.linearFunctions || elo },
+        { name: "Systems of Equations & Inequalities", elo: user.topicElo?.systemsOfEquationsInequalities || elo },
+      ]
+    },
+    {
+      name: "Exponential Growth",
+      subtopics: [
+        { name: "Percentages", elo: user.topicElo?.percentages || elo },
+        { name: "Exponents", elo: user.topicElo?.exponents || elo },
+        { name: "Exponential Functions", elo: user.topicElo?.exponentialFunctions || elo },
+      ]
+    },
+    {
+      name: "Quadratics & Polynomial Functions",
+      subtopics: [
+        { name: "Factoring", elo: user.topicElo?.factoring || elo },
+        { name: "Solving Quadratic Equations", elo: user.topicElo?.solvingQuadraticEquations || elo },
+        { name: "Analyzing Quadratic Functions", elo: user.topicElo?.analyzingQuadraticFunctions || elo },
+        { name: "Polynomial Functions", elo: user.topicElo?.polynomialFunctions || elo },
+        { name: "Rational Functions", elo: user.topicElo?.rationalFunctions || elo },
+      ]
+    },
+    {
+      name: "Geometry & Trig",
+      subtopics: [
+        { name: "Angles", elo: user.topicElo?.angles || elo },
+        { name: "Triangles", elo: user.topicElo?.triangles || elo },
+        { name: "Circles", elo: user.topicElo?.circles || elo },
+        { name: "Area, Surface Area & Volume", elo: user.topicElo?.areaSurfaceAreaVolume || elo },
+        { name: "Unit Conversion", elo: user.topicElo?.unitConversion || elo },
+      ]
+    },
+    {
+      name: "Statistics",
+      subtopics: [
+        { name: "Scatterplots", elo: user.topicElo?.scatterplots || elo },
+        { name: "Probability", elo: user.topicElo?.probability || elo },
+        { name: "Mean, Median & Standard Deviation", elo: user.topicElo?.meanMedianStandardDeviation || elo },
+        { name: "Sampling", elo: user.topicElo?.sampling || elo },
+      ]
+    },
+  ];
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     loadProblem();
@@ -102,6 +170,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     try {
       const newProblem = await api.getProblem(user.id);
       setProblem(newProblem);
+      setIsStarred(newProblem.starred);
     } catch (err) {
       console.error("Failed to load problem:", err);
     } finally {
@@ -120,12 +189,10 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
           selectedAnswer
       );
 
-      // Mark that first submission has been made
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
       setEloUpdateAmount(result.eloUpdate);
 
-      // Update ELO and animate
       const oldElo = elo;
       const newElo = elo + result.eloUpdate;
       setElo(newElo);
@@ -154,6 +221,22 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     loadProblem();
   };
 
+  const handleToggleStar = async () => {
+    if (!problem) return;
+
+    
+    try {
+      if (isStarred) {
+        await api.unstarProblem(user.id, problem.id);
+      } else {
+        await api.starProblem(user.id, problem.id);
+      }
+      setIsStarred(!isStarred)
+    } catch (err) {
+      console.error("Failed to toggle star:", err);
+    }
+  };
+
   return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
         {/* Header */}
@@ -176,20 +259,46 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                           Topic ELO Breakdown
                         </div>
                       </div>
-                      {user.topicEloData.map((topic) => (
-                          <div
-                              key={topic.topicId}
-                              className="px-5 py-2.5 hover:bg-gray-100 transition"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-700">{topic.topicName}</span>
-                              <div className="flex items-center gap-1.5">
-                                <Diamond className="w-3.5 h-3.5 text-indigo-600" />
-                                <span className="font-semibold text-gray-900">
-                            {topic.elo}
+                      {categoryStructure.map((category) => (
+                          <div key={category.name}>
+                            <button
+                                onClick={() => toggleCategory(category.name)}
+                                className="w-full px-5 py-3 hover:bg-gray-50 transition flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                {expandedCategories.has(category.name) ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                )}
+                                <span className="font-medium text-gray-900">
+                            {category.name}
                           </span>
                               </div>
-                            </div>
+                            </button>
+
+                            {expandedCategories.has(category.name) && (
+                                <div className="bg-gray-50">
+                                  {category.subtopics.map((subtopic) => (
+                                      <div
+                                          key={subtopic.name}
+                                          className="px-5 py-2.5 pl-14 hover:bg-gray-100 transition"
+                                      >
+                                        <div className="flex items-center justify-between">
+                                <span className="text-gray-700">
+                                  {subtopic.name}
+                                </span>
+                                          <div className="flex items-center gap-1.5">
+                                            <Diamond className="w-3.5 h-3.5 text-indigo-600" />
+                                            <span className="font-semibold text-gray-900">
+                                    {subtopic.elo}
+                                  </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                  ))}
+                                </div>
+                            )}
                           </div>
                       ))}
                     </div>
@@ -210,6 +319,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Problem History Button */}
+              <button
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  title="Problem History"
+                  onClick={() => setShowHistory(true)}
+              >
+                <History className="w-6 h-6 text-gray-700" />
+              </button>
+
               <button
                   className={`p-2 rounded-lg transition ${
                       showDesmos ? "bg-indigo-100" : "hover:bg-gray-100"
@@ -276,13 +394,23 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                   firstSubmissionCorrect={firstSubmissionCorrect}
                   eloUpdateAmount={eloUpdateAmount}
                   animatedElo={animatedElo}
+                  isStarred={isStarred}
                   onSelectAnswer={setSelectedAnswer}
                   onSubmit={handleSubmit}
                   onNext={handleNext}
+                  onToggleStar={handleToggleStar}
                   loading={loading}
               />
           ) : null}
         </div>
+
+        {/* Problem History Modal */}
+        {showHistory && (
+            <ProblemHistory
+                userId={user.id}
+                onClose={() => setShowHistory(false)}
+            />
+        )}
 
         {/* Desmos Calculator Window */}
         {showDesmos && (

@@ -1,8 +1,9 @@
-import type { User, Problem, SubmitAnswerResponse } from "../types";
+// src/services/api.ts
+import type { User, Problem, SubmitAnswerResponse, ProblemHistoryItem } from "../types";
+
 
 export const api = {
   login: async () => {
-    // We just redirect to the backend Google OAuth endpoint
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
   },
 
@@ -11,6 +12,7 @@ export const api = {
       `${import.meta.env.VITE_API_URL}/problems/next?userId=${userId}`
     );
     const data = await res.json();
+    console.log(data.problem)
     return data.problem;
   },
 
@@ -31,8 +33,51 @@ export const api = {
           userId,
           answerChoice: answer,
         }),
-      });
+      }
+    );
     const data = await res.json();
-    return {eloUpdate: data.eloUpdate, correct: data.correct}
+    return { eloUpdate: data.eloUpdate, correct: data.correct };
+  },
+
+  starProblem: async (userId: number, problemId: number): Promise<void> => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/problems/star`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        problemId,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to star problem");
+    }
+  },
+
+
+  unstarProblem: async (userId: number, problemId: number): Promise<void> => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/problems/star`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        problemId,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to unstar problem");
+    }
+  },
+
+
+  getProblemHistory: async (userId: number): Promise<ProblemHistoryItem[]> => {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/problems/history?userId=${userId}`
+    );
+    const data = await res.json();
+    return data.history;
   },
 };
