@@ -18,3 +18,16 @@ export interface SubmitAnswerResponse {
     eloUpdate: number;
     correct: boolean;
 }
+
+export interface ProblemHistoryItem {
+  id: number;
+  problemId: number;
+  problemText: string;
+  difficulty: string;
+  isFrq: boolean;
+  userAnswer: string;
+  correctAnswer: string;
+  correct: boolean;
+  timestamp: string;
+  starred: boolean;
+}

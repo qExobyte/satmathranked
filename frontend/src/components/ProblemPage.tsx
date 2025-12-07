@@ -9,11 +9,13 @@ import {
   List,
   ChevronDown,
   ChevronRight,
+  History,
 } from "lucide-react";
 import { Rnd } from "react-rnd";
 import type { User, Problem, SubmitAnswerResponse } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "./ProblemCard";
+import { ProblemHistory } from "../components/ProblemHistory";
 
 declare global {
   interface Window {
@@ -34,11 +36,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [animatedElo, setAnimatedElo] = useState(user.elo);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showDesmos, setShowDesmos] = useState(false);
   const [showFormulaSheet, setShowFormulaSheet] = useState(false);
 
-  // New state for tracking submission flow
+  // Starred problems tracking
+  const [starredProblems, setStarredProblems] = useState<Set<number>>(new Set());
+
+  // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
   const [firstSubmissionCorrect, setFirstSubmissionCorrect] = useState<
       boolean | null
@@ -54,8 +60,6 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
   const [formulaSheetPosition, setFormulaSheetPosition] = useState({x: 50, y: 100});
 
-  // TODO replace topicElo mock with whatever reference we actually have to the topic elos
-  // but these categories are the actual categories we should use!
   const categoryStructure = [
     {
       name: "Algebra & Functions",
@@ -186,12 +190,10 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
           selectedAnswer
       );
 
-      // Mark that first submission has been made
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
       setEloUpdateAmount(result.eloUpdate);
 
-      // Update ELO and animate
       const oldElo = elo;
       const newElo = elo + result.eloUpdate;
       setElo(newElo);
@@ -220,6 +222,38 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     loadProblem();
   };
 
+  const handleToggleStar = async () => {
+    if (!problem) return;
+
+    const isCurrentlyStarred = starredProblems.has(problem.id);
+    
+    try {
+      if (isCurrentlyStarred) {
+        setStarredProblems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(problem.id);
+          return newSet;
+        });
+        await api.unstarProblem(user.id, problem.id);
+      } else {
+        setStarredProblems(prev => new Set([...prev, problem.id]));
+        await api.starProblem(user.id, problem.id);
+      }
+    } catch (err) {
+      console.error("Failed to toggle star:", err);
+      // Revert the optimistic update on error
+      if (isCurrentlyStarred) {
+        setStarredProblems(prev => new Set([...prev, problem.id]));
+      } else {
+        setStarredProblems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(problem.id);
+          return newSet;
+        });
+      }
+    }
+  };
+
   return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
         {/* Header */}
@@ -244,7 +278,6 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                       </div>
                       {categoryStructure.map((category) => (
                           <div key={category.name}>
-                            {/* Category Header (Collapsible) */}
                             <button
                                 onClick={() => toggleCategory(category.name)}
                                 className="w-full px-5 py-3 hover:bg-gray-50 transition flex items-center justify-between"
@@ -261,7 +294,6 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                               </div>
                             </button>
 
-                            {/* Subtopics (Shown when expanded) */}
                             {expandedCategories.has(category.name) && (
                                 <div className="bg-gray-50">
                                   {category.subtopics.map((subtopic) => (
@@ -304,6 +336,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Problem History Button */}
+              <button
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  title="Problem History"
+                  onClick={() => setShowHistory(true)}
+              >
+                <History className="w-6 h-6 text-gray-700" />
+              </button>
+
               <button
                   className={`p-2 rounded-lg transition ${
                       showDesmos ? "bg-indigo-100" : "hover:bg-gray-100"
@@ -370,13 +411,23 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                   firstSubmissionCorrect={firstSubmissionCorrect}
                   eloUpdateAmount={eloUpdateAmount}
                   animatedElo={animatedElo}
+                  isStarred={starredProblems.has(problem.id)}
                   onSelectAnswer={setSelectedAnswer}
                   onSubmit={handleSubmit}
                   onNext={handleNext}
+                  onToggleStar={handleToggleStar}
                   loading={loading}
               />
           ) : null}
         </div>
+
+        {/* Problem History Modal */}
+        {showHistory && (
+            <ProblemHistory
+                userId={user.id}
+                onClose={() => setShowHistory(false)}
+            />
+        )}
 
         {/* Desmos Calculator Window */}
         {showDesmos && (
