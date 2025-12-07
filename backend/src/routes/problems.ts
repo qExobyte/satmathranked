@@ -119,14 +119,12 @@ router.get("/next", async (req: Request, res: Response) => {
   const history = historyRows as TopicHistoryRow[];
 
   // for each topic id index -> associated elo with each topic
-  console.log("Topics", topics)
   const topicElos = []
   for (const topic of topics) {
     const topicId = topic.id
     const topicHistory = history.filter(h => h.topic_id == topicId);
     const topicElo = computeTopicElo(userId, topicHistory);
     topicElos.push(topicElo);
-    console.log("Topic ", topic.name, " Elo: ", topicElo);
   }
 
   //select topic
@@ -137,6 +135,9 @@ router.get("/next", async (req: Request, res: Response) => {
 
   //sample problem rating
   const chosenDifficulty = chooseDifficulty(selectedTopicElo);
+
+  console.log(selectedTopicID)
+  console.log(chosenDifficulty)
 
   //SQL query to fetch problem closest to sampledRating in selectedTopicID goes here
   //placeholder: filter sampleProblems
@@ -155,12 +156,17 @@ router.get("/next", async (req: Request, res: Response) => {
   );
 
   const problems = problemRows as Problem[];
+
   if (problems.length === 0) {
     return res.status(404).json({
       success: false,
       message: "No problems found for this topic"
     });
   }
+  console.log(problems[0]);
+  return res.status(200).json({
+    problem: problems[0]
+  })
 });
 
 router.post("/submit", (req: Request, res: Response) => {

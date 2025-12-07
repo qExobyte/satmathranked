@@ -1,5 +1,4 @@
 function weightedChoice(weights: number[]) {
-    console.log("weights: ", weights);
     const total = weights.reduce((a, b) => a + b, 0);
     const threshold = Math.random() * total;
 

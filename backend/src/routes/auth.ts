@@ -71,6 +71,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             );
             user = (newUsers as User[])[0];
         }
+        console.log(user);
 
         // we need to compute our elo initially on login (not just after every problem!)
         const elo = await computeUserElo(user.id)
@@ -78,13 +79,14 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         // Change this to whatever info we actually want
         const userInfo = {
             //googleId: payload.sub,
-            id: user.id,
-            email: user.email_address,
-            name: user.username,
+            id: user.ID,
+            email: user.Email_Address,
+            name: user.Username,
             elo: elo
             //picture: payload.picture,
             //email_verified: payload.email_verified
         };
+        console.log(userInfo)
 
         // Redirect to frontend with user info (name and email)
         //If we want we can instead make a jwt and send that if we want to do session based
