@@ -1,3 +1,6 @@
+import type {Topic, TopicHistoryRow} from "../types/types.js";
+import pool from "../db_config.js";
+
 const BASE_RATING = 500;
 const SAMPLE_HISTORY = [
     { problem_id: 1, problem_rating: 450, is_correct: true },
@@ -20,39 +23,40 @@ function computeElo (
     return newRating;
 };
 
-function computeTopicRating(userId: number, topicId: number): number {
-    /* placeholder function to compute topic rating for a user 
-    real SQL query: CALL get_user_topic_history(userID, topicID);
-    */
-   const sample_data = SAMPLE_HISTORY.filter(entry => entry.problem_id === topicId); //dummy filter by topicID
-
+function computeTopicElo(userId: number, topicHistory: TopicHistoryRow[]): number {
     let rating = BASE_RATING;
 
-    for (const entry of sample_data) {
-        rating = computeElo(rating, entry.problem_rating, entry.is_correct);
+    for (const problem of topicHistory) {
+        rating = computeElo(rating, problem.difficulty, problem.is_correct);
     }
     return rating;
 };
 
-function computeOverallRating (userId: number): number {
-    /* placeholder function to compute overall rating for a user 
-    real SQL query: CALL get_user_topic_history(userID, topicID); for each topic,
-    then compute topic ratings and do weighted average
-    Also need to query topicIDs SELECT ID, weight FROM topics;
-    */
-    const topicIds= [1, 2, 3]; // placeholder topic IDs
-    const topicWeights: number[] = [0.5, 0.3, 0.2]; // placeholder weights
+async function computeUserElo(userId: number): Promise<number> {
+    const [topicRows] = await pool.query(
+        `SELECT id, weight FROM TOPICS ORDER BY id`
+    );
 
-    let overallRating = 0;
-    for (let i = 0; i < topicIds.length; i++) {
-        // compute each rating on the fly and default to 0 if undefined
-        const topicId = topicIds[i] ?? 0;
-        const rating = computeTopicRating(userId, topicId) ?? 0;
-        const weight = topicWeights[i] ?? 0;
-        overallRating += rating * weight;
+    const [historyRows] = await pool.query(
+        `SELECT ph.is_correct, ph.problem_rating, p.topic_id
+     FROM PROBLEM_HISTORY ph
+     JOIN PROBLEMS p ON ph.problem_id = p.id
+     WHERE ph.user_id = ?
+     ORDER BY ph.timestamp ASC`,
+        [userId]
+    );
+
+    const topics = topicRows as Topic[];
+    const history = historyRows as TopicHistoryRow[];
+
+    let overallElo = 0;
+    for (const topic of topics) {
+        const topicHistory = history.filter(h => h.topic_id === topic.id);
+        const topicElo = computeTopicElo(userId, topicHistory);
+        overallElo += topicElo * topic.weight;
     }
-    return overallRating;
-};
 
+    return Math.round(overallElo);
+}
 
-export { computeTopicRating, computeOverallRating, computeElo };
+export { computeTopicElo, computeUserElo, computeElo };

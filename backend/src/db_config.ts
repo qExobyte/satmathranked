@@ -11,4 +11,11 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+console.log('DB Config:', {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD ? '***set***' : 'MISSING',
+    database: process.env.DB_NAME
+});
+
 export default pool;

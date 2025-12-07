@@ -1,6 +1,9 @@
 import express from "express";
 import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
+import pool from "../db_config.js";
+import type {User} from "../types/types.js";
+import {computeUserElo} from "../utils/elo.js";
 
 const router = express.Router();
 
@@ -46,18 +49,44 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'Failed to get user info' });
         }
 
+        const [existingUsers] = await pool.query(
+            'SELECT ID, Username, Email_Address FROM USERS WHERE Email_Address = ?',
+            [payload.email]
+        );
+
+        let user: User;
+        if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+            user = existingUsers[0] as User;
+        } else {
+            // User doesn't exist, create new user
+            const [result] = await pool.query(
+                'INSERT INTO USERS (Username, Email_Address) VALUES (?, ?)',
+                [payload.name, payload.email]
+            );
+
+            const insertId = (result as any).insertId;
+            const [newUsers] = await pool.query(
+                'SELECT ID as id, Username as username, Profile_Info_Id as profile_info_id, Email_Address as email_address FROM USERS WHERE ID = ?',
+                [insertId]
+            );
+            user = (newUsers as User[])[0];
+        }
+        console.log(user);
+
+        // we need to compute our elo initially on login (not just after every problem!)
+        const elo = await computeUserElo(user.id)
+
         // Change this to whatever info we actually want
         const userInfo = {
             //googleId: payload.sub,
-            email: payload.email,
-            name: payload.name,
+            id: user.ID,
+            email: user.Email_Address,
+            name: user.Username,
+            elo: elo
             //picture: payload.picture,
             //email_verified: payload.email_verified
         };
-
-        // TODO: Database logic goes here
-        //Create user if doesn't exist, else fetch user
-        
+        console.log(userInfo)
 
         // Redirect to frontend with user info (name and email)
         //If we want we can instead make a jwt and send that if we want to do session based

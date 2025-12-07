@@ -20,7 +20,7 @@ function clamp(x: number, min: number, max: number) {
     return Math.max(min, Math.min(max, x));
 }
 
-function sampleRating(rating: number) {
+function chooseDifficulty(rating: number) {
     const SD = 50;
     const raw = randomNormal(rating, SD);
 
@@ -28,4 +28,4 @@ function sampleRating(rating: number) {
     return clamp(Math.round(raw), 200, 800);
 }
 
-export { weightedChoice, sampleRating };
+export { weightedChoice, chooseDifficulty };
