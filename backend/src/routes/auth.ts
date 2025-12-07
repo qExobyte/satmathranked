@@ -50,7 +50,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         }
 
         const [existingUsers] = await pool.query(
-            'SELECT ID, Username, Email_Address FROM USERS WHERE Email_Address = ?',
+            'SELECT ID as id, Username as username, Email_Address as email_address FROM USERS WHERE email_address = ?',
             [payload.email]
         );
 
@@ -66,7 +66,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
             const insertId = (result as any).insertId;
             const [newUsers] = await pool.query(
-                'SELECT ID as id, Username as username, Profile_Info_Id as profile_info_id, Email_Address as email_address FROM USERS WHERE ID = ?',
+                'SELECT ID as id, Username as username, Profile_Info_Id as profile_info_id, Email_Address as email_address FROM USERS WHERE id = ?',
                 [insertId]
             );
             user = (newUsers as User[])[0];
@@ -91,9 +91,9 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         // Change this to whatever info we actually want
         const userInfo = {
             //googleId: payload.sub,
-            id: user.ID,
-            email: user.Email_Address,
-            name: user.Username,
+            id: user.id,
+            email: user.email_address,
+            name: user.username,
             elo: elo,
             topicEloData: topicEloData
             //picture: payload.picture,

@@ -41,6 +41,8 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
 
   const questionRef = useRef<HTMLDivElement>(null);
   const answerChoiceRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const mcqAnswerExplanationRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const frqAnswerExplanationRef = useRef<(HTMLDivElement)>(null);
 
   function katexRender(textDiv: HTMLDivElement | HTMLSpanElement) {
     renderMathInElement(textDiv, {
@@ -65,6 +67,20 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
       }
     });
   }, [problem.answerChoices]);
+
+  useEffect(() => {
+    mcqAnswerExplanationRefs.current.forEach((ref) => {
+      if (ref) {
+        katexRender(ref);
+      }
+    })
+  }, [submittedAnswers, problem.answerChoices]);
+
+  useEffect(() => {
+    if (frqAnswerExplanationRef.current) {
+      katexRender(frqAnswerExplanationRef.current);
+    }
+  }, [firstSubmissionMade, problem.answerChoices]);
 
   // Reset submitted answers when problem changes
   useEffect(() => {
@@ -217,7 +233,10 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                     <div className="font-semibold text-green-900 mb-2">
                       {firstSubmissionCorrect ? "Correct!" : "Explanation:"}
                     </div>
-                    <div className="text-sm text-gray-800">
+                    <div
+                        className="text-sm text-gray-800"
+                        ref={frqAnswerExplanationRef}
+                    >
                       {problem.answerChoices[correctAnswerKey][1]}
                     </div>
                   </div>
@@ -293,7 +312,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                             </div>
                             <div className={`text-sm ${
                               isCorrect ? "text-green-800" : "text-red-800"
-                            }`}>
+                            }`}
+                              ref = {(el) => {
+                                frqAnswerExplanationRef.current[index] = el;
+                              }}
+                            >
                               {problem.answerChoices[option][1]}
                             </div>
                           </div>
