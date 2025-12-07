@@ -1,6 +1,6 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { computeElo, computeTopicElo } from "../utils/elo.js";
+import { computeElo, computeTopicElo, computeTopicEloList } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import pool from "../db_config.js";
 import type {Problem, Topic, TopicHistoryRow} from "../types/types.js";
@@ -97,35 +97,11 @@ router.get("/next", async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
 
   const [topicRows] = await pool.query(
-      `SELECT id, name, weight
-       FROM TOPICS
-       ORDER BY id`
+      `SELECT id, name, weight FROM TOPICS ORDER BY id`
   );
   const topics = topicRows as Topic[];
 
-  // problem history + the topic id
-  const [historyRows] = await pool.query(
-      `SELECT ph.problem_id,
-              ph.is_correct,
-              ph.timestamp,
-              p.topic_id,
-              ph.problem_rating
-       FROM PROBLEM_HISTORY ph
-              JOIN PROBLEMS p ON ph.problem_id = p.id
-       WHERE ph.user_id = ?
-       ORDER BY ph.timestamp ASC`,
-      [userId]
-  );
-  const history = historyRows as TopicHistoryRow[];
-
-  // for each topic id index -> associated elo with each topic
-  const topicElos = []
-  for (const topic of topics) {
-    const topicId = topic.id
-    const topicHistory = history.filter(h => h.topic_id == topicId);
-    const topicElo = computeTopicElo(userId, topicHistory);
-    topicElos.push(topicElo);
-  }
+  const topicElos = await computeTopicEloList(userId);
 
   //select topic
   const weights = topicElos.map((r) => 1 / (r ** 2));

@@ -26,7 +26,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           id: userInfo.id,
           username: userInfo.name || "User",
           email: userInfo.email || "",
-          elo: userInfo.elo, // Random ELO between 400-800
+          elo: userInfo.elo,
+          topicEloData: userInfo.topicEloData || [],
         };
 
         setWelcomeUser(user);

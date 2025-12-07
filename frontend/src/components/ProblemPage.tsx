@@ -54,71 +54,6 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [formulaSheetSize, setFormulaSheetSize] = useState({ width: 800, height: 600 });
   const [formulaSheetPosition, setFormulaSheetPosition] = useState({x: 50, y: 100});
 
-  // TODO replace topicElo mock with whatever reference we actually have to the topic elos
-  // but these categories are the actual categories we should use!
-  const categoryStructure = [
-    {
-      name: "Algebra & Functions",
-      subtopics: [
-        { name: "Algebra", elo: user.topicElo?.algebra || elo },
-        { name: "Equivalent Expressions", elo: user.topicElo?.equivalentExpressions || elo },
-        { name: "Solving for Constants", elo: user.topicElo?.solvingForConstants || elo },
-        { name: "Translating English to Math", elo: user.topicElo?.translatingEnglishToMath || elo },
-        { name: "Linear Functions", elo: user.topicElo?.linearFunctions || elo },
-        { name: "Systems of Equations & Inequalities", elo: user.topicElo?.systemsOfEquationsInequalities || elo },
-      ]
-    },
-    {
-      name: "Exponential Growth",
-      subtopics: [
-        { name: "Percentages", elo: user.topicElo?.percentages || elo },
-        { name: "Exponents", elo: user.topicElo?.exponents || elo },
-        { name: "Exponential Functions", elo: user.topicElo?.exponentialFunctions || elo },
-      ]
-    },
-    {
-      name: "Quadratics & Polynomial Functions",
-      subtopics: [
-        { name: "Factoring", elo: user.topicElo?.factoring || elo },
-        { name: "Solving Quadratic Equations", elo: user.topicElo?.solvingQuadraticEquations || elo },
-        { name: "Analyzing Quadratic Functions", elo: user.topicElo?.analyzingQuadraticFunctions || elo },
-        { name: "Polynomial Functions", elo: user.topicElo?.polynomialFunctions || elo },
-        { name: "Rational Functions", elo: user.topicElo?.rationalFunctions || elo },
-      ]
-    },
-    {
-      name: "Geometry & Trig",
-      subtopics: [
-        { name: "Angles", elo: user.topicElo?.angles || elo },
-        { name: "Triangles", elo: user.topicElo?.triangles || elo },
-        { name: "Circles", elo: user.topicElo?.circles || elo },
-        { name: "Area, Surface Area & Volume", elo: user.topicElo?.areaSurfaceAreaVolume || elo },
-        { name: "Unit Conversion", elo: user.topicElo?.unitConversion || elo },
-      ]
-    },
-    {
-      name: "Statistics",
-      subtopics: [
-        { name: "Scatterplots", elo: user.topicElo?.scatterplots || elo },
-        { name: "Probability", elo: user.topicElo?.probability || elo },
-        { name: "Mean, Median & Standard Deviation", elo: user.topicElo?.meanMedianStandardDeviation || elo },
-        { name: "Sampling", elo: user.topicElo?.sampling || elo },
-      ]
-    },
-  ];
-
-  const toggleCategory = (categoryName: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryName)) {
-        newSet.delete(categoryName);
-      } else {
-        newSet.add(categoryName);
-      }
-      return newSet;
-    });
-  };
-
   useEffect(() => {
     loadProblem();
   }, []);
@@ -231,7 +166,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                 <button
                     onClick={() => setShowCategoryMenu(!showCategoryMenu)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition"
-                    title="Category ELO Breakdown"
+                    title="Topic ELO Breakdown"
                 >
                   <List className="w-5 h-5 text-gray-700" />
                 </button>
@@ -242,48 +177,20 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                           Topic ELO Breakdown
                         </div>
                       </div>
-                      {categoryStructure.map((category) => (
-                          <div key={category.name}>
-                            {/* Category Header (Collapsible) */}
-                            <button
-                                onClick={() => toggleCategory(category.name)}
-                                className="w-full px-5 py-3 hover:bg-gray-50 transition flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-2.5">
-                                {expandedCategories.has(category.name) ? (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronRight className="w-4 h-4 text-gray-500" />
-                                )}
-                                <span className="font-medium text-gray-900">
-                            {category.name}
+                      {user.topicEloData.map((topic) => (
+                          <div
+                              key={topic.topicId}
+                              className="px-5 py-2.5 hover:bg-gray-100 transition"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-700">{topic.topicName}</span>
+                              <div className="flex items-center gap-1.5">
+                                <Diamond className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="font-semibold text-gray-900">
+                            {topic.elo}
                           </span>
                               </div>
-                            </button>
-
-                            {/* Subtopics (Shown when expanded) */}
-                            {expandedCategories.has(category.name) && (
-                                <div className="bg-gray-50">
-                                  {category.subtopics.map((subtopic) => (
-                                      <div
-                                          key={subtopic.name}
-                                          className="px-5 py-2.5 pl-14 hover:bg-gray-100 transition"
-                                      >
-                                        <div className="flex items-center justify-between">
-                                <span className="text-gray-700">
-                                  {subtopic.name}
-                                </span>
-                                          <div className="flex items-center gap-1.5">
-                                            <Diamond className="w-3.5 h-3.5 text-indigo-600" />
-                                            <span className="font-semibold text-gray-900">
-                                    {subtopic.elo}
-                                  </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                  ))}
-                                </div>
-                            )}
+                            </div>
                           </div>
                       ))}
                     </div>

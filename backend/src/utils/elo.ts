@@ -32,6 +32,41 @@ function computeTopicElo(userId: number, topicHistory: TopicHistoryRow[]): numbe
     return rating;
 };
 
+// TODO switch this to a map? Probably better but not a priority
+async function computeTopicEloList(userId: number): Promise<number[]> {
+    const [topicRows] = await pool.query(
+        `SELECT id, name, weight
+       FROM TOPICS
+       ORDER BY id`
+    );
+    const topics = topicRows as Topic[];
+
+    // problem history + the topic id
+    const [historyRows] = await pool.query(
+        `SELECT ph.problem_id,
+              ph.is_correct,
+              ph.timestamp,
+              p.topic_id,
+              ph.problem_rating
+       FROM PROBLEM_HISTORY ph
+              JOIN PROBLEMS p ON ph.problem_id = p.id
+       WHERE ph.user_id = ?
+       ORDER BY ph.timestamp ASC`,
+        [userId]
+    );
+    const history = historyRows as TopicHistoryRow[];
+
+    // for each topic id index -> associated elo with each topic
+    const topicElos = []
+    for (const topic of topics) {
+        const topicId = topic.id
+        const topicHistory = history.filter(h => h.topic_id == topicId);
+        const topicElo = computeTopicElo(userId, topicHistory);
+        topicElos.push(topicElo);
+    }
+    return topicElos;
+}
+
 async function computeUserElo(userId: number): Promise<number> {
     const [topicRows] = await pool.query(
         `SELECT id, weight FROM TOPICS ORDER BY id`
@@ -59,4 +94,4 @@ async function computeUserElo(userId: number): Promise<number> {
     return Math.round(overallElo);
 }
 
-export { computeTopicElo, computeUserElo, computeElo };
+export { computeTopicElo, computeTopicEloList, computeUserElo, computeElo };
