@@ -1,6 +1,6 @@
 [{
   "difficulty": 440,
-  "topic": "Systems of Equations & Inequalities",
+  "topic": 0,
   "problem": "The point $(8, 2)$ in the $xy$-plane is a solution to which of the following systems of inequalities?",
   "choices": {
     "A. $x > 0$ and $y > 0$": [
@@ -24,7 +24,7 @@
 
 {
   "difficulty": 460,
-  "topic": "Systems of Equations & Inequalities",
+  "topic": 0,
   "problem": "$$x + y = 18$$\n$$5y = x$$\n\nWhat is the solution $(x, y)$ to the given system of equations?",
   "choices": {
     "A. $(15, 3)$": [
@@ -48,7 +48,7 @@
 
 {
   "difficulty": 500,
-  "topic": "Linear Functions",
+  "topic": 1,
   "problem": "$$f(x) = 7x + 1$$\n\nThe function gives the total number of people on a company retreat with $x$ managers. What is the total number of people on a company retreat with $7$ managers?",
   "choices": {
     "50": [
@@ -60,7 +60,7 @@
 
 {
   "difficulty": 520,
-  "topic": "Exponential Functions",
+  "topic": 2,
   "problem": "The function $f$ is defined by $f(x) = 270(0.1)^x$. What is the value of $f(0)$?",
   "choices": {
     "A. $0$": [
@@ -84,7 +84,7 @@
 
 {
   "difficulty": 540,
-  "topic": "Algebra",
+  "topic": 3,
   "problem": "$$|x - 5| = 10$$\n\nWhat is one possible solution to the given equation?",
   "choices": {
     "15 or -5": [
@@ -96,7 +96,7 @@
 
 {
   "difficulty": 560,
-  "topic": "Linear Functions",
+  "topic": 1,
   "problem": "$$f(x) = 2x + 3$$\n\nFor the given function $f$, the graph of $y = f(x)$ in the $xy$-plane is parallel to line $j$. What is the slope of line $j$?",
   "choices": {
     "2": [
@@ -108,7 +108,7 @@
 
 {
   "difficulty": 680,
-  "topic": "Sampling",
+  "topic": 4,
   "problem": "To estimate the proportion of a population that has a certain characteristic, a random sample was selected from the population. Based on the sample, it is estimated that the proportion of the population that has the characteristic is $0.49$, with an associated margin of error of $0.04$. Based on this estimate and margin of error, which of the following is the most appropriate conclusion about the proportion of the population that has the characteristic?",
   "choices": {
     "A. It is plausible that the proportion is between $0.45$ and $0.53$.": [
@@ -132,7 +132,7 @@
 
 {
   "difficulty": 660,
-  "topic": "Systems of Equations & Inequalities",
+  "topic": 0,
   "problem": "A moving truck can tow a trailer if the combined weight of the trailer and the boxes it contains is no more than $4,600$ pounds. What is the maximum number of boxes this truck can tow in a trailer with a weight of $500$ pounds if each box weighs $120$ pounds?",
   "choices": {
     "A. $34$": [
@@ -156,7 +156,7 @@
 
 {
   "difficulty": 660,
-  "topic": "Systems of Equations & Inequalities",
+  "topic": 0,
   "problem": "A proposal for a new library was included on an election ballot. A radio show stated that $3$ times as many people voted in favor of the proposal as people who voted against it. A social media post reported that $15,000$ more people voted in favor of the proposal than voted against it. Based on these data, how many people voted against the proposal?",
   "choices": {
     "A. $7,500$": [
@@ -180,7 +180,7 @@
 
 {
   "difficulty": 600,
-  "topic": "Quadratic Equations",
+  "topic": 5,
   "problem": "$$-4x^2 - 7x = -36$$\n\nWhat is the positive solution to the given equation?",
   "choices": {
     "A. $\\frac{7}{4}$": [
@@ -204,7 +204,7 @@
 
 {
   "difficulty": 680,
-  "topic": "Algebra",
+  "topic": 3,
   "problem": "$$-3x + 21px = 84$$\n\nIn the given equation, $p$ is a constant. The equation has no solution. What is the value of $p$?",
   "choices": {
     "A. $0$": [
@@ -228,7 +228,7 @@
 
 {
   "difficulty": 620,
-  "topic": "Quadratic Functions",
+  "topic": 6,
   "problem": "$$f(x) = (x - 10)(x + 13)$$\n\nThe function $f$ is defined by the given equation. For what value of $x$ does $f(x)$ reach its minimum?",
   "choices": {
     "A. $-130$": [
@@ -252,7 +252,7 @@
 
 {
   "difficulty": 640,
-  "topic": "Triangles",
+  "topic": 7,
   "problem": "In triangle $JKL$, $\\cos(K) = \\frac{24}{51}$ and angle $J$ is a right angle. What is the value of $\\cos(L)$?",
   "choices": {
     "15/17": [
@@ -264,7 +264,7 @@
 
 {
   "difficulty": 700,
-  "topic": "Quadratic Functions",
+  "topic": 6,
   "problem": "The function $f(x) = \\frac{1}{9}(x - 7)^2 + 3$ gives a metal ball's height above the ground $f(x)$, in inches, $x$ seconds after it started moving on a track, where $0 \\leq x \\leq 10$. Which of the following is the best interpretation of the vertex of the graph of $y = f(x)$ in the $xy$-plane?",
   "choices": {
     "A. The metal ball's minimum height was $3$ inches above the ground.": [
@@ -288,19 +288,19 @@
 
 {
   "difficulty": 720,
-  "topic": "Quadratic Equations",
+  "topic": 5,
   "problem": "$$-x^2 + bx - 676 = 0$$\n\nIn the given equation, $b$ is a positive integer. The equation has no real solution. What is the greatest possible value of $b$?",
   "choices": {
     "51": [
       true,
-      "This is correct. For a quadratic equation ax² + bx + c = 0 to have no real solutions, its discriminant must be negative: b² - 4ac < 0. For this equation, a = -1 and c = -676, so b² - 4(-1)(-676) < 0. Simplifying: b² - 2704 < 0, therefore b² < 2704. Taking the square root: |b| < 52. Since b is a positive integer, the greatest possible value is 51."
+      "This is correct. For a uadratic equation ax² + bx + c = 0 to have no real solutions, its discriminant must be negative: b² - 4ac < 0. For this equation, a = -1 and c = -676, so b² - 4(-1)(-676) < 0. Simplifying: b² - 2704 < 0, therefore b² < 2704. Taking the square root: |b| < 52. Since b is a positive integer, the greatest possible value is 51."
     ]
   }
 },
 
 {
   "difficulty": 740,
-  "topic": "Exponential Functions",
+  "topic": 2,
   "problem": "$$f(x) = 5,470(0.64)^{\\frac{x}{12}}$$\n\nThe function $f$ gives the value, in dollars, of a certain piece of equipment after $x$ months of use. If the value of the equipment decreases each year by $p\\%$ of its value the preceding year, what is the value of $p$?",
   "choices": {
     "A. $4$": [
@@ -324,7 +324,7 @@
 
 {
   "difficulty": 680,
-  "topic": "Circles",
+  "topic": 9,
   "problem": "The equation $x^2 + (y - 1)^2 = 49$ represents circle A. Circle B is obtained by shifting circle A down $2$ units in the $xy$-plane. Which of the following equations represents circle B?",
   "choices": {
     "A. $(x - 2)^2 + (y - 1)^2 = 49$": [
@@ -348,7 +348,7 @@
 
 {
   "difficulty": 600,
-  "topic": "Percentages",
+  "topic": 8,
   "problem": "$210$ is $p\\%$ greater than $30$. What is the value of $p$?",
   "choices": {
     "600": [
@@ -360,7 +360,7 @@
 
 {
   "difficulty": 760,
-  "topic": "Area, Surface Area & Volume",
+  "topic": 10,
   "problem": "Two identical rectangular prisms each have a height of $90$ centimeters (cm). The base of each prism is a square, and the surface area of each prism is $K$ cm$^2$. If the prisms are glued together along a square base, the resulting prism has a surface area of $\\frac{92}{47}K$ cm$^2$. What is the side length, in cm, of each square base?",
   "choices": {
     "A. $4$": [
