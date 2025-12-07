@@ -12,6 +12,7 @@ export const api = {
       `${import.meta.env.VITE_API_URL}/problems/next?userId=${userId}`
     );
     const data = await res.json();
+    console.log(data.problem)
     return data.problem;
   },
 
@@ -38,10 +39,6 @@ export const api = {
     return { eloUpdate: data.eloUpdate, correct: data.correct };
   },
 
-  // TODO: Implement backend endpoint
-  // POST /problems/star
-  // Body: { userId: number, problemId: number }
-  // Response: { success: boolean }
   starProblem: async (userId: number, problemId: number): Promise<void> => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/problems/star`, {
       method: "POST",
@@ -58,10 +55,7 @@ export const api = {
     }
   },
 
-  // TODO: Implement backend endpoint
-  // DELETE /problems/star
-  // Body: { userId: number, problemId: number }
-  // Response: { success: boolean }
+
   unstarProblem: async (userId: number, problemId: number): Promise<void> => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/problems/star`, {
       method: "DELETE",
@@ -78,20 +72,7 @@ export const api = {
     }
   },
 
-  // TODO: Implement backend endpoint
-  // GET /problems/history?userId={userId}
-  // Response: { history: ProblemHistoryItem[] }
-  // Each item should include:
-  //   - id: unique history entry id
-  //   - problemId: the problem's id
-  //   - problemText: the problem text (for display)
-  //   - difficulty: problem difficulty
-  //   - isFrq: whether it's FRQ or MCQ
-  //   - userAnswer: what the user answered
-  //   - correctAnswer: the correct answer
-  //   - correct: whether user got it right
-  //   - timestamp: when they attempted it
-  //   - starred: whether the problem is starred
+
   getProblemHistory: async (userId: number): Promise<ProblemHistoryItem[]> => {
     const res = await fetch(
       `${import.meta.env.VITE_API_URL}/problems/history?userId=${userId}`

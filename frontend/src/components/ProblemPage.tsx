@@ -40,9 +40,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showDesmos, setShowDesmos] = useState(false);
   const [showFormulaSheet, setShowFormulaSheet] = useState(false);
-
-  // Starred problems tracking
-  const [starredProblems, setStarredProblems] = useState<Set<number>>(new Set());
+  const [isStarred, setIsStarred] = useState(false);
 
   // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
@@ -172,6 +170,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     try {
       const newProblem = await api.getProblem(user.id);
       setProblem(newProblem);
+      setIsStarred(newProblem.starred);
     } catch (err) {
       console.error("Failed to load problem:", err);
     } finally {
@@ -225,32 +224,16 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const handleToggleStar = async () => {
     if (!problem) return;
 
-    const isCurrentlyStarred = starredProblems.has(problem.id);
     
     try {
-      if (isCurrentlyStarred) {
-        setStarredProblems(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(problem.id);
-          return newSet;
-        });
+      if (isStarred) {
         await api.unstarProblem(user.id, problem.id);
       } else {
-        setStarredProblems(prev => new Set([...prev, problem.id]));
         await api.starProblem(user.id, problem.id);
       }
+      setIsStarred(!isStarred)
     } catch (err) {
       console.error("Failed to toggle star:", err);
-      // Revert the optimistic update on error
-      if (isCurrentlyStarred) {
-        setStarredProblems(prev => new Set([...prev, problem.id]));
-      } else {
-        setStarredProblems(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(problem.id);
-          return newSet;
-        });
-      }
     }
   };
 
@@ -411,7 +394,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                   firstSubmissionCorrect={firstSubmissionCorrect}
                   eloUpdateAmount={eloUpdateAmount}
                   animatedElo={animatedElo}
-                  isStarred={starredProblems.has(problem.id)}
+                  isStarred={isStarred}
                   onSelectAnswer={setSelectedAnswer}
                   onSubmit={handleSubmit}
                   onNext={handleNext}

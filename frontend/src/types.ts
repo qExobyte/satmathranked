@@ -11,7 +11,8 @@ export interface Problem {
     topicId: string;
     problemText: string;
     isFrq: boolean;
-    answerChoices: { [key: string]: string[] }; // map of answer choice to [correctness, explanation]
+    starred: boolean;
+    answerChoices: Record<string, [boolean, string]> // map of answer choice to [correctness, explanation]
 }
 
 export interface SubmitAnswerResponse {
@@ -24,10 +25,9 @@ export interface ProblemHistoryItem {
   problemId: number;
   problemText: string;
   difficulty: string;
-  isFrq: boolean;
   userAnswer: string;
-  correctAnswer: string;
   correct: boolean;
+  answerChoices: Record<string, [boolean, string]>
   timestamp: string;
   starred: boolean;
 }

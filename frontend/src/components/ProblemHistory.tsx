@@ -56,9 +56,16 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
       return sortBy === "recent" ? dateB - dateA : dateA - dateB;
     });
 
+  // Helper for computing correct answer from answerChoices
+  const getCorrectAnswer = (choices: Record<string, [boolean, string]>) => {
+    const found = Object.entries(choices).find(([, value]) => value.isCorrect === true);
+    return found ? found[0] : "N/A";
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">Problem History</h2>
@@ -76,7 +83,9 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
             <Clock className="w-5 h-5 text-gray-600" />
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "recent" | "oldest")}
+              onChange={(e) =>
+                setSortBy(e.target.value as "recent" | "oldest")
+              }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="recent">Most Recent</option>
@@ -90,7 +99,11 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
               value={filterBy}
               onChange={(e) =>
                 setFilterBy(
-                  e.target.value as "all" | "correct" | "incorrect" | "starred"
+                  e.target.value as
+                    | "all"
+                    | "correct"
+                    | "incorrect"
+                    | "starred"
                 )
               }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -115,59 +128,64 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredAndSortedHistory.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {item.correct ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )}
-                      <span className="text-sm text-gray-600">
-                        {new Date(item.timestamp).toLocaleDateString()} at{" "}
-                        {new Date(item.timestamp).toLocaleTimeString()}
-                      </span>
-                      {item.starred && (
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      )}
-                    </div>
-                    <div className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
-                      {item.difficulty}
-                    </div>
-                  </div>
+              {filteredAndSortedHistory.map((item) => {
+                const correctAnswer = getCorrectAnswer(item.answerChoices);
 
-                  <div className="text-gray-800 mb-2 line-clamp-2">
-                    {item.problemText}
-                  </div>
-
-                  <div className="flex gap-4 text-sm flex-wrap">
-                    <div>
-                      <span className="text-gray-600">Your answer: </span>
-                      <span
-                        className={
-                          item.correct
-                            ? "text-green-700 font-semibold"
-                            : "text-red-700 font-semibold"
-                        }
-                      >
-                        {item.userAnswer}
-                      </span>
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {item.correct ? (
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-600" />
+                        )}
+                        <span className="text-sm text-gray-600">
+                          {new Date(item.timestamp).toLocaleDateString()} at{" "}
+                          {new Date(item.timestamp).toLocaleTimeString()}
+                        </span>
+                        {item.starred && (
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        )}
+                      </div>
+                      <div className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+                        {item.difficulty}
+                      </div>
                     </div>
-                    {!item.correct && (
+
+                    <div className="text-gray-800 mb-2 line-clamp-2">
+                      {item.problemText}
+                    </div>
+
+                    <div className="flex gap-4 text-sm flex-wrap">
                       <div>
-                        <span className="text-gray-600">Correct answer: </span>
-                        <span className="text-green-700 font-semibold">
-                          {item.correctAnswer}
+                        <span className="text-gray-600">Your answer: </span>
+                        <span
+                          className={
+                            item.correct
+                              ? "text-green-700 font-semibold"
+                              : "text-red-700 font-semibold"
+                          }
+                        >
+                          {item.userAnswer}
                         </span>
                       </div>
-                    )}
+
+                      {!item.correct && (
+                        <div>
+                          <span className="text-gray-600">Correct answer: </span>
+                          <span className="text-green-700 font-semibold">
+                            {correctAnswer}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
