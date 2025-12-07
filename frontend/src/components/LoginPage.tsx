@@ -22,12 +22,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       try {
         const userInfo = JSON.parse(decodeURIComponent(userParam));
 
-        // Create user object with random ID and ELO for now
         const user: User = {
-          id: Math.floor(Math.random() * 10000), // Random ID for now
+          id: userInfo.id,
           username: userInfo.name || "User",
           email: userInfo.email || "",
-          elo: Math.floor(Math.random() * 400) + 400, // Random ELO between 400-800
+          elo: userInfo.elo, // Random ELO between 400-800
         };
 
         setWelcomeUser(user);

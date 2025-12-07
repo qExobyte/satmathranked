@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import pool from "../db_config.js";
 import type {User} from "../types/types.js";
+import {computeUserElo} from "../utils/elo.js";
 
 const router = express.Router();
 
@@ -48,7 +49,6 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'Failed to get user info' });
         }
 
-        // TODO check if user already exists
         const [existingUsers] = await pool.query(
             'SELECT ID, Username, Email_Address FROM USERS WHERE Email_Address = ?',
             [payload.email]
@@ -72,11 +72,16 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             user = (newUsers as User[])[0];
         }
 
+        // we need to compute our elo initially on login (not just after every problem!)
+        const elo = await computeUserElo(user.id)
+
         // Change this to whatever info we actually want
         const userInfo = {
             //googleId: payload.sub,
+            id: user.id,
             email: user.email_address,
             name: user.username,
+            elo: elo
             //picture: payload.picture,
             //email_verified: payload.email_verified
         };

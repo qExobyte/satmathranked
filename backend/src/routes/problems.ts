@@ -89,10 +89,10 @@ const sampleProblems: Problem[] = [
 ];
 
 router.get("/next", async (req: Request, res: Response) => {
-  // placeholder for fetching problem. given user id, need to compute topic ratings
-  // and select a topic randomly weighted towards lower-rated topics
-  // then select a problem from that topic around that rating
-  // need to also query topicIDs
+  // 1. Computes user's current elos for every topic.
+  // 2. Determines weights for every topic based on current elos
+  // 3. Chooses topic probabilistically based on these weights
+  // 4. Fetches next problem from this topic at the optimal difficulty
 
   const userId = Number(req.query.userId);
 
