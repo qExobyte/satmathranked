@@ -41,6 +41,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [showFormulaSheet, setShowFormulaSheet] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [topicEloData, setTopicEloData] = useState(user.topicEloData);
 
   // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
@@ -135,7 +136,14 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
       setEloUpdateAmount(result.eloUpdate);
-
+      const [topicId, topicUpdate] = result.categoryUpdate;
+      setTopicEloData(prevTopics => 
+        prevTopics.map(topic => 
+          topic.topicId === topicId 
+            ? { ...topic, elo: topic.elo + topicUpdate }
+            : topic
+        )
+      );
       const oldElo = elo;
       const newElo = elo + result.eloUpdate;
       setElo(newElo);
@@ -210,7 +218,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                       Topic ELO Breakdown
                     </div>
                   </div>
-                  {user.topicEloData.map((topic) => (
+                  {topicEloData.map((topic) => (
                     <div
                       key={topic.topicId}
                       className="px-5 py-2.5 hover:bg-gray-100 transition"
@@ -220,7 +228,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                         <div className="flex items-center gap-1.5">
                           <Diamond className="w-3.5 h-3.5 text-indigo-600" />
                           <span className="font-semibold text-gray-900">
-                            {topic.elo}
+                            {Math.round(topic.elo)}
                           </span>
                         </div>
                       </div>

@@ -58,7 +58,7 @@ router.get("/next", async (req: Request, res: Response) => {
         p.answer_choices AS answerChoices,
         p.image_url AS imageUrl,
         EXISTS (
-            SELECT 1 FROM starred_problems sp 
+            SELECT 1 FROM STARRED_PROBLEMS sp 
             WHERE sp.problem_id = p.id AND sp.user_id = ?
         ) AS starred
      FROM PROBLEMS p
@@ -124,8 +124,8 @@ router.post("/submit", async (req: Request, res: Response) => {
     let prevOverallElo = await computeUserElo(userId);
     
     // Insert the new result
-    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",
-      [userId, problemId, difficulty, correctAnswer]
+    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct, answer_text) VALUES (?, ?, ?, ?, ?)",
+      [userId, problemId, difficulty, correctAnswer, answerChoice]
     );
     console.log(correctAnswer);
     
@@ -154,10 +154,11 @@ router.post("/submit", async (req: Request, res: Response) => {
     const overallEloDelta = (newOverallElo - prevOverallElo);
     console.log(topicEloDelta)
     console.log(overallEloDelta)
+    const categoryUpdate=[topic_id, topicEloDelta];
 
     return res.json({ 
         success: true, 
-        categoryUpdate: topicEloDelta, 
+        categoryUpdate: categoryUpdate, 
         eloUpdate: overallEloDelta, 
         correct: correctAnswer
     });
@@ -183,13 +184,13 @@ router.get("/history", async (req: Request, res: Response) => {
           ph.timestamp,
           p.answer_choices AS answerChoices,
           EXISTS(
-              SELECT 1 FROM starred_problems sp
+              SELECT 1 FROM STARRED_PROBLEMS sp
               WHERE sp.problem_id = ph.problem_id AND sp.user_id = ph.user_id
           ) AS starred
       FROM 
-          problem_history ph
+          PROBLEM_HISTORY ph
       JOIN 
-          problems p ON ph.problem_id = p.id
+          PROBLEMS p ON ph.problem_id = p.id
       WHERE 
           ph.user_id = ?
       ORDER BY 
@@ -213,7 +214,7 @@ router.post("/star", async (req: Request, res: Response) => {
   };
   try {
     const [starredProblem] = await pool.query(
-      `INSERT INTO starred_problems (user_id, problem_id, starred_date) VALUES(?, ?, NOW());`,
+      `INSERT INTO STARRED_PROBLEMS (user_id, problem_id, starred_date) VALUES(?, ?, NOW());`,
       [userId, problemId]
     );
     res.status(200).json({
@@ -237,7 +238,7 @@ router.delete("/star", async (req: Request, res: Response) => {
   };
   try {
     const [removedStar] = await pool.query(
-      `DELETE FROM starred_problems WHERE user_id=? AND problem_id=?;`,
+      `DELETE FROM STARRED_PROBLEMS WHERE user_id=? AND problem_id=?;`,
       [userId, problemId]
     );
     res.status(200).json({

@@ -23,6 +23,7 @@ export interface Problem {
 export interface SubmitAnswerResponse {
     eloUpdate: number;
     correct: boolean;
+    categoryUpdate: [number, number];
 }
 
 export interface ProblemHistoryItem {

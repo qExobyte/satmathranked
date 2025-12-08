@@ -222,7 +222,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                                                     </div>
                                                 </button>
 
-                                                {wasSubmitted && problem.answerChoices[option][1] && (
+                                                {wasSubmitted && problem.answerChoices[option].explanation && (
                                                     <div
                                                         className={`mt-2 p-3 rounded-lg border ${
                                                             firstSubmissionCorrect
@@ -249,7 +249,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                                                                 mcqAnswerExplanationRefs.current[index] = el;
                                                             }}
                                                         >
-                                                            {problem.answerChoices[option][1]}
+                                                            {problem.answerChoices[option].explanation}
                                                         </div>
                                                     </div>
                                                 )}

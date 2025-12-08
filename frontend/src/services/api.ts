@@ -48,7 +48,7 @@ export const api = {
       }
     );
     const data = await res.json();
-    return { eloUpdate: data.eloUpdate, correct: data.correct };
+    return { eloUpdate: data.eloUpdate, correct: data.correct, categoryUpdate: data.categoryUpdate };
   },
 
   starProblem: async (userId: number, problemId: number): Promise<void> => {
@@ -90,6 +90,7 @@ export const api = {
       `${import.meta.env.VITE_API_URL}/problems/history?userId=${userId}`
     );
     const data = await res.json();
+    console.log(data.history);
     return data.history;
   },
 };
