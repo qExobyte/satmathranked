@@ -137,7 +137,7 @@ router.get("/next", async (req: Request, res: Response) => {
         p.answer_choices AS answerChoices,
         p.image_url AS imageUrl,
         EXISTS (
-            SELECT 1 FROM starred_problems sp 
+            SELECT 1 FROM STARRED_PROBLEMS sp 
             WHERE sp.problem_id = p.id AND sp.user_id = ?
         ) AS starred
      FROM PROBLEMS p
