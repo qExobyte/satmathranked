@@ -1,6 +1,6 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { computeElo, computeTopicElo, computeTopicEloList } from "../utils/elo.js";
+import { computeUserElo, computeTopicElo } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import pool from "../db_config.js";
 import type { Problem, Topic, TopicHistoryRow } from "../types/types.js";
@@ -83,7 +83,6 @@ router.get("/next", async (req: Request, res: Response) => {
 });
 
 router.post("/submit", async (req: Request, res: Response) => {
-    console.log("SUBMIT CALLED");
     const { userId, problemId, answerChoice } = req.body as {
         userId: number;
         problemId: number;
@@ -91,8 +90,9 @@ router.post("/submit", async (req: Request, res: Response) => {
     };
 
     console.log("ABOUT TO RUN SQL");
-    const [results] = await pool.execute("SELECT answer_choices, difficulty FROM PROBLEMS WHERE id=?", [problemId])
+    const [results] = await pool.execute("SELECT answer_choices, difficulty, topic_id FROM PROBLEMS WHERE id=?", [problemId])
     
+    const topic_id = results[0].topic_id;
     const answers = results[0].answer_choices;
     const difficulty = results[0].difficulty;
     console.log(answers);
@@ -103,10 +103,64 @@ router.post("/submit", async (req: Request, res: Response) => {
         correctAnswer = answers[answerChoice].isCorrect;
     }
 
-    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",[userId, problemId, difficulty, correctAnswer]);
+    // Get user's problem history BEFORE adding the new attempt
+    const [historyRows] = await pool.query(
+      `SELECT ph.problem_id,
+              ph.is_correct,
+              ph.timestamp,
+              p.topic_id,
+              ph.problem_rating AS difficulty
+       FROM PROBLEM_HISTORY ph
+       JOIN PROBLEMS p ON ph.problem_id = p.id
+       WHERE ph.user_id = ?
+       ORDER BY ph.timestamp ASC`,
+      [userId]
+    );
+    const history = historyRows as TopicHistoryRow[];
+    const topicHistory = history.filter(h => h.topic_id === topic_id);
+    
+    // Calculate previous ELOs
+    let prevTopicElo = computeTopicElo(userId, topicHistory);
+    let prevOverallElo = await computeUserElo(userId);
+    
+    // Insert the new result
+    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",
+      [userId, problemId, difficulty, correctAnswer]
+    );
     console.log(correctAnswer);
+    
+    // Get updated history AFTER adding the new attempt
+    const [updatedHistoryRows] = await pool.query(
+      `SELECT ph.problem_id,
+              ph.is_correct,
+              ph.timestamp,
+              p.topic_id,
+              ph.problem_rating AS difficulty
+       FROM PROBLEM_HISTORY ph
+       JOIN PROBLEMS p ON ph.problem_id = p.id
+       WHERE ph.user_id = ?
+       ORDER BY ph.timestamp ASC`,
+      [userId]
+    );
+    const updatedHistory = updatedHistoryRows as TopicHistoryRow[];
+    const updatedTopicHistory = updatedHistory.filter(h => h.topic_id === topic_id);
+    
+    // Calculate new ELOs
+    const newTopicElo = computeTopicElo(userId, updatedTopicHistory);
+    const newOverallElo = await computeUserElo(userId);
+    
+    // Calculate deltas
+    const topicEloDelta = (newTopicElo - prevTopicElo);
+    const overallEloDelta = (newOverallElo - prevOverallElo);
+    console.log(topicEloDelta)
+    console.log(overallEloDelta)
 
-    return res.json({ success: true, categoryUpdate: 10, eloUpdate: 20, correct: correctAnswer});
+    return res.json({ 
+        success: true, 
+        categoryUpdate: topicEloDelta, 
+        eloUpdate: overallEloDelta, 
+        correct: correctAnswer
+    });
 });
 
 

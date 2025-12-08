@@ -2,21 +2,12 @@ import type {Topic, TopicHistoryRow} from "../types/types.js";
 import pool from "../db_config.js";
 
 const BASE_RATING = 500;
-const SAMPLE_HISTORY = [
-    { problem_id: 1, problem_rating: 450, is_correct: true },
-    {problmem_id: 1, problem_rating: 500, is_correct: false },
-    { problem_id: 2, problem_rating: 550, is_correct: false },
-    {problem_id: 2, problem_rating: 500, is_correct: true },
-    { problem_id: 3, problem_rating: 600, is_correct: true },
-    {problem_id: 3, problem_rating: 650, is_correct: false },
-]; //placeholder
-
 
 function computeElo (
   updateRating: number, //rating of user or problem to be updated
   opposingRating: number, //rating of the opposing user or problem
   isCorrect: boolean) : number {
-    const K = 32; //K-factor, we might want to change this
+    const K = 50; //K-factor, we might want to change this
     const expectedScore = 1 / (1 + Math.pow(10, (opposingRating - updateRating) / 400));
     const actualScore = isCorrect ? 1 : 0;
     const newRating = updateRating + K * (actualScore - expectedScore);
@@ -47,7 +38,7 @@ async function computeTopicEloList(userId: number): Promise<number[]> {
               ph.is_correct,
               ph.timestamp,
               p.topic_id,
-              ph.problem_rating
+              ph.problem_rating AS difficulty
        FROM PROBLEM_HISTORY ph
               JOIN PROBLEMS p ON ph.problem_id = p.id
        WHERE ph.user_id = ?
@@ -73,7 +64,7 @@ async function computeUserElo(userId: number): Promise<number> {
     );
 
     const [historyRows] = await pool.query(
-        `SELECT ph.is_correct, ph.problem_rating, p.topic_id
+        `SELECT ph.is_correct, ph.problem_rating as difficulty, p.topic_id
      FROM PROBLEM_HISTORY ph
      JOIN PROBLEMS p ON ph.problem_id = p.id
      WHERE ph.user_id = ?
@@ -88,6 +79,7 @@ async function computeUserElo(userId: number): Promise<number> {
     for (const topic of topics) {
         const topicHistory = history.filter(h => h.topic_id === topic.id);
         const topicElo = computeTopicElo(userId, topicHistory);
+        console.log(topicElo);
         overallElo += topicElo * topic.weight;
     }
 
