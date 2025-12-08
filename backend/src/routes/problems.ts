@@ -82,27 +82,6 @@ router.get("/next", async (req: Request, res: Response) => {
   });
 });
 
-
-/*"choices": {
-    "A. $x > 0$ and $y > 0$": [
-      true,
-      "This is correct. The point (8, 2) is located i
-    ],
-    "B. $x > 0$ and $y < 0$": [
-      false,
-      "This is incorrect. This system represents points in the fourth quadrant. While 8 > 0 is true, 2 < 0 is false, so the point (8, 2) does not satisfy this system."
-    ],
-    "C. $x < 0$ and $y > 0$": [
-      false,
-      "This is incorrect. This system represents points in the second quadrant. While 2 > 0 is true, 8 < 0 is false, so the point (8, 2) does not satisfy this system."
-    ],
-    "D. $x < 0$ and $y < 0$": [
-      false,
-      "This is incorrect. This system represents points in the third quadrant. Both 8 < 0 and 2 < 0 are false, so the point (8, 2) does not satisfy this system."
-    ]
-  }*/
-
-
 router.post("/submit", async (req: Request, res: Response) => {
     console.log("SUBMIT CALLED");
     const { userId, problemId, answerChoice } = req.body as {
@@ -127,7 +106,7 @@ router.post("/submit", async (req: Request, res: Response) => {
     const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",[userId, problemId, difficulty, correctAnswer]);
     console.log(correctAnswer);
 
-    return res.json({ success: true, eloUpdate: 20, correct: correctAnswer});
+    return res.json({ success: true, categoryUpdate: 10, eloUpdate: 20, correct: correctAnswer});
 });
 
 
