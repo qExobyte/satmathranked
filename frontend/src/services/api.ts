@@ -7,6 +7,18 @@ export const api = {
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
   },
 
+    deleteAccount: async (userId: number): Promise<void> => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/users?userId=${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) {
+      throw new Error("Failed to delete account");
+    }
+  },
+
   getProblem: async (userId: number): Promise<Problem> => {
     const res = await fetch(
       `${import.meta.env.VITE_API_URL}/problems/next?userId=${userId}`
