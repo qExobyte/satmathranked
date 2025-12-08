@@ -125,6 +125,7 @@ router.post("/submit", async (req: Request, res: Response) => {
     }
 
     const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",[userId, problemId, difficulty, correctAnswer]);
+    console.log(correctAnswer);
 
     return res.json({ success: true, eloUpdate: 20, correct: correctAnswer});
 });
