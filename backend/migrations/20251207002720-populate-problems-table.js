@@ -41,12 +41,13 @@ exports.up = function(db) {
     
     // Insert problem into the database
     insertPromises.push(
-      db.insert('PROBLEMS', 
-        ['difficulty', 'problem_text', 'topic_id', 'answer_choices'],
+      db.runSql(
+          'INSERT INTO PROBLEMS (difficulty, problem_text, topic_id, is_frq, answer_choices) VALUES (?, ?, ?, ?, ?)',
         [
           item.difficulty || null,
           item.problem || null,
           item.topic !== undefined ? item.topic : null,
+          item.is_frq || null,
           JSON.stringify(answerChoices)
         ]
       )

@@ -1,6 +1,6 @@
 // src/components/ProblemCard.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Star } from "lucide-react";
 import type { Problem } from "../types";
 import renderMathInElement from "katex/contrib/auto-render";
 import "katex/dist/katex.min.css";
@@ -12,9 +12,11 @@ interface ProblemCardProps {
   firstSubmissionCorrect: boolean | null;
   eloUpdateAmount: number;
   animatedElo: number;
+  isStarred: boolean;
   onSelectAnswer: (answer: string) => void;
   onSubmit: () => void;
   onNext: () => void;
+  onToggleStar: () => void;
   loading: boolean;
 }
 
@@ -25,22 +27,25 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   firstSubmissionCorrect,
   eloUpdateAmount,
   animatedElo,
+  isStarred,
   onSelectAnswer,
   onSubmit,
   onNext,
+  onToggleStar,
   loading,
 }) => {
   const labels = ["A", "B", "C", "D"];
   const [showEloAnimation, setShowEloAnimation] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(true);
   const [prevFirstSubmissionMade, setPrevFirstSubmissionMade] = useState(false);
-  
-  // Track all submitted answers to keep their explanations visible
+
   const [submittedAnswers, setSubmittedAnswers] = useState<Set<string>>(new Set());
   const [currentAttemptAnswer, setCurrentAttemptAnswer] = useState<string | null>(null);
 
   const questionRef = useRef<HTMLDivElement>(null);
   const answerChoiceRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const mcqAnswerExplanationRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const frqAnswerExplanationRef = useRef<(HTMLDivElement)>(null);
 
   function katexRender(textDiv: HTMLDivElement | HTMLSpanElement) {
     renderMathInElement(textDiv, {
@@ -66,6 +71,20 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
     });
   }, [problem.answerChoices]);
 
+  useEffect(() => {
+    mcqAnswerExplanationRefs.current.forEach((ref) => {
+      if (ref) {
+        katexRender(ref);
+      }
+    })
+  }, [submittedAnswers, problem.answerChoices]);
+
+  useEffect(() => {
+    if (frqAnswerExplanationRef.current) {
+      katexRender(frqAnswerExplanationRef.current);
+    }
+  }, [firstSubmissionMade, problem.answerChoices]);
+
   // Reset submitted answers when problem changes
   useEffect(() => {
     setSubmittedAnswers(new Set());
@@ -73,12 +92,10 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
     setAnimationComplete(true);
   }, [problem.id]);
 
-  // Trigger ELO animation when first submission is made
   useEffect(() => {
     if (firstSubmissionMade && !prevFirstSubmissionMade) {
       setShowEloAnimation(true);
       setAnimationComplete(false);
-      // Add the first submitted answer to the set
       if (selectedAnswer) {
         setSubmittedAnswers(new Set([selectedAnswer]));
         setCurrentAttemptAnswer(null);
@@ -92,20 +109,13 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
     setPrevFirstSubmissionMade(firstSubmissionMade);
   }, [firstSubmissionMade, prevFirstSubmissionMade, selectedAnswer]);
 
-  // Determine the correct answer key
   const correctAnswerKey = Object.keys(problem.answerChoices || {}).find(
     (key) => problem.answerChoices[key][0] === "correct"
   );
 
-  // For MCQ: check if user has found the correct answer (after first submission)
   const mcqCorrectAnswerFound = !problem.isFrq && submittedAnswers.has(correctAnswerKey || "");
-
-  // Show Next button when:
-  // - FRQ: after first submission (regardless of correctness)
-  // - MCQ: after finding the correct answer (post first submission)
   const showNextButton = firstSubmissionMade && (problem.isFrq || mcqCorrectAnswerFound);
 
-  // Handle subsequent submissions for MCQ (frontend only)
   const handleSubsequentSubmit = () => {
     if (currentAttemptAnswer && firstSubmissionMade) {
       setSubmittedAnswers(prev => new Set([...prev, currentAttemptAnswer]));
@@ -113,18 +123,14 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   };
 
-  // Override onSelectAnswer to handle current attempt tracking
   const handleSelectAnswer = (answer: string) => {
     if (firstSubmissionMade && !mcqCorrectAnswerFound) {
-      // After first submission, just track the current attempt
       setCurrentAttemptAnswer(answer);
     } else if (!firstSubmissionMade) {
-      // Before first submission, use original behavior
       onSelectAnswer(answer);
     }
   };
 
-  // Determine which submit handler to use
   const handleSubmitClick = () => {
     if (firstSubmissionMade) {
       handleSubsequentSubmit();
@@ -135,7 +141,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className="relative">
-      {/* Slot Machine ELO Animation - Positioned Absolutely */}
       {showEloAnimation && (
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full mb-6 z-50 pointer-events-none">
           <div
@@ -165,8 +170,19 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
       )}
 
       <div className="bg-white rounded-3xl shadow-xl p-12 relative overflow-hidden transition-all duration-500">
-        {/* Metadata */}
+        {/* Metadata with Star Button */}
         <div className="absolute top-6 right-6 flex gap-2">
+          <button
+            onClick={onToggleStar}
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            title={isStarred ? "Unstar problem" : "Star problem"}
+          >
+            <Star
+              className={`w-6 h-6 ${
+                isStarred ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
+              }`}
+            />
+          </button>
           <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
             {problem.difficulty}
           </div>
@@ -200,7 +216,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                   placeholder="Type your answer..."
                 />
 
-                {/* Show explanation after submission for FRQ */}
                 {firstSubmissionMade && correctAnswerKey && (
                   <div
                     className={`mt-4 p-4 rounded-lg border ${
@@ -217,7 +232,10 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                     <div className="font-semibold text-green-900 mb-2">
                       {firstSubmissionCorrect ? "Correct!" : "Explanation:"}
                     </div>
-                    <div className="text-sm text-gray-800">
+                    <div
+                        className="text-sm text-gray-800"
+                        ref={frqAnswerExplanationRef}
+                    >
                       {problem.answerChoices[correctAnswerKey][1]}
                     </div>
                   </div>
@@ -232,8 +250,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                       : currentAttemptAnswer === option;
                     const isCorrect = option === correctAnswerKey;
                     const wasSubmitted = submittedAnswers.has(option);
-                    
-                    // Determine visual state
+
                     const showAsCorrect = wasSubmitted && isCorrect;
                     const showAsIncorrect = wasSubmitted && !isCorrect;
 
@@ -279,7 +296,6 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                           </div>
                         </button>
 
-                        {/* Show explanation for all submitted answers */}
                         {wasSubmitted && problem.answerChoices[option][1] && (
                           <div className={`mt-2 p-3 rounded-lg border ${
                             isCorrect 
@@ -293,7 +309,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                             </div>
                             <div className={`text-sm ${
                               isCorrect ? "text-green-800" : "text-red-800"
-                            }`}>
+                            }`}
+                              ref = {(el) => {
+                                frqAnswerExplanationRef.current[index] = el;
+                              }}
+                            >
                               {problem.answerChoices[option][1]}
                             </div>
                           </div>

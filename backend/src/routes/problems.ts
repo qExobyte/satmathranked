@@ -3,16 +3,12 @@ import type { Request, Response } from "express";
 import { computeElo, computeTopicElo, computeTopicEloList } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import pool from "../db_config.js";
-import type {Problem, Topic, TopicHistoryRow} from "../types/types.js";
+import type { Problem, Topic, TopicHistoryRow } from "../types/types.js";
 
 const router = express.Router();
 
 
-console.log("FILE LOADED");
-
-
 router.get("/next", async (req: Request, res: Response) => {
-  console.log("CALLED");
   const userId = Number(req.query.userId);
 
   const [topicRows] = await pool.query(
@@ -107,7 +103,6 @@ router.get("/next", async (req: Request, res: Response) => {
   }*/
 
 
-
 router.post("/submit", async (req: Request, res: Response) => {
     console.log("SUBMIT CALLED");
     const { userId, problemId, answerChoice } = req.body as {
@@ -132,6 +127,96 @@ router.post("/submit", async (req: Request, res: Response) => {
     const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",[userId, problemId, difficulty, correctAnswer]);
 
     return res.json({ success: true, eloUpdate: 20, correct: correctAnswer});
+});
+
+
+router.get("/history", async (req: Request, res: Response) => {
+  const userId = Number(req.query.userId);
+  if (!userId) {
+    return res.status(400).json({ error: "Missing userId" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT 
+          ph.id,
+          ph.problem_id AS problemId,
+          p.problem_text AS problemText,
+          p.difficulty,
+          ph.answer_text AS userAnswer,
+          ph.is_correct AS correct,
+          ph.timestamp,
+          p.answer_choices AS answerChoices,
+          EXISTS(
+              SELECT 1 FROM starred_problems sp
+              WHERE sp.problem_id = ph.problem_id AND sp.user_id = ph.user_id
+          ) AS starred
+      FROM 
+          problem_history ph
+      JOIN 
+          problems p ON ph.problem_id = p.id
+      WHERE 
+          ph.user_id = ?
+      ORDER BY 
+          ph.timestamp DESC;
+      `,
+      [userId]
+    );
+
+    res.status(200).json({ history: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+router.post("/star", async (req: Request, res: Response) => {
+  const { userId, problemId } = req.body as {
+    userId: number;
+    problemId: number;
+  };
+  try {
+    const [starredProblem] = await pool.query(
+      `INSERT INTO starred_problems (user_id, problem_id, starred_date) VALUES(?, ?, NOW());`,
+      [userId, problemId]
+    );
+    res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error starring problem: ", error);
+    res.status(500).json({
+      success: false,
+      message: "Error starring problem",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+
+router.delete("/star", async (req: Request, res: Response) => {
+  const { userId, problemId } = req.body as {
+    userId: number;
+    problemId: number;
+  };
+  try {
+    const [removedStar] = await pool.query(
+      `DELETE FROM starred_problems WHERE user_id=? AND problem_id=?;`,
+      [userId, problemId]
+    );
+    res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error removing star from problem: ", error);
+    res.status(500).json({
+      success: false,
+      message: "Error removing star from problem",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
 
 export default router;

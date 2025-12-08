@@ -9,11 +9,13 @@ import {
   List,
   ChevronDown,
   ChevronRight,
+  History,
 } from "lucide-react";
 import { Rnd } from "react-rnd";
 import type { User, Problem, SubmitAnswerResponse } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "./ProblemCard";
+import { ProblemHistory } from "../components/ProblemHistory";
 
 declare global {
   interface Window {
@@ -34,10 +36,12 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [animatedElo, setAnimatedElo] = useState(user.elo);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showDesmos, setShowDesmos] = useState(false);
   const [showFormulaSheet, setShowFormulaSheet] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
 
-  // New state for tracking submission flow
+  // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
   const [firstSubmissionCorrect, setFirstSubmissionCorrect] = useState<
       boolean | null
@@ -102,6 +106,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     try {
       const newProblem = await api.getProblem(user.id);
       setProblem(newProblem);
+      setIsStarred(newProblem.starred);
     } catch (err) {
       console.error("Failed to load problem:", err);
     } finally {
@@ -120,12 +125,10 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
           selectedAnswer
       );
 
-      // Mark that first submission has been made
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
       setEloUpdateAmount(result.eloUpdate);
 
-      // Update ELO and animate
       const oldElo = elo;
       const newElo = elo + result.eloUpdate;
       setElo(newElo);
@@ -152,6 +155,22 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
 
   const handleNext = () => {
     loadProblem();
+  };
+
+  const handleToggleStar = async () => {
+    if (!problem) return;
+
+    
+    try {
+      if (isStarred) {
+        await api.unstarProblem(user.id, problem.id);
+      } else {
+        await api.starProblem(user.id, problem.id);
+      }
+      setIsStarred(!isStarred)
+    } catch (err) {
+      console.error("Failed to toggle star:", err);
+    }
   };
 
   return (
@@ -189,7 +208,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                             {topic.elo}
                           </span>
                               </div>
-                            </div>
+                          </div>
                           </div>
                       ))}
                     </div>
@@ -210,6 +229,15 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Problem History Button */}
+              <button
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  title="Problem History"
+                  onClick={() => setShowHistory(true)}
+              >
+                <History className="w-6 h-6 text-gray-700" />
+              </button>
+
               <button
                   className={`p-2 rounded-lg transition ${
                       showDesmos ? "bg-indigo-100" : "hover:bg-gray-100"
@@ -276,13 +304,23 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
                   firstSubmissionCorrect={firstSubmissionCorrect}
                   eloUpdateAmount={eloUpdateAmount}
                   animatedElo={animatedElo}
+                  isStarred={isStarred}
                   onSelectAnswer={setSelectedAnswer}
                   onSubmit={handleSubmit}
                   onNext={handleNext}
+                  onToggleStar={handleToggleStar}
                   loading={loading}
               />
           ) : null}
         </div>
+
+        {/* Problem History Modal */}
+        {showHistory && (
+            <ProblemHistory
+                userId={user.id}
+                onClose={() => setShowHistory(false)}
+            />
+        )}
 
         {/* Desmos Calculator Window */}
         {showDesmos && (
