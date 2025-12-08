@@ -100,7 +100,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             setShowEloAnimation(true);
             setAnimationComplete(false);
             if (selectedAnswer) {
-                setSubmittedAnswers(new Set([selectedAnswer]));
+               setSubmittedAnswer(selectedAnswer);
             }
             const timer = setTimeout(() => {
                 setShowEloAnimation(false);
@@ -110,19 +110,12 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         }
     }, [firstSubmissionMade, selectedAnswer]);
 
-    //TODO: move all of this to just take logic from submission 
-    const correctAnswerKey = Object.keys(problem.answerChoices || {}).find(
-        (key) => problem.answerChoices[key][0] === "correct"
-    );
-
-    const mcqCorrectAnswerFound = !problem.isFrq && submittedAnswers.has(correctAnswerKey || "");
-    const showNextButton = firstSubmissionMade && (problem.isFrq || mcqCorrectAnswerFound);
-
     const handleSelectAnswer = (answer: string) => {
         onSelectAnswer(answer);
     };
 
     const handleSubmitClick = () => {
+        
         onSubmit();
     };
 
@@ -131,17 +124,16 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             {showEloAnimation && (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full mb-6 z-50 pointer-events-none">
                     <div
-                        className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-2xl ${
-firstSubmissionCorrect
-? "bg-gradient-to-r from-green-500 to-green-600"
-: "bg-gradient-to-r from-red-500 to-red-600"
-} animate-slideDown`}
+                        className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-2xl ${firstSubmissionCorrect
+                                ? "bg-gradient-to-r from-green-500 to-green-600"
+                                : "bg-gradient-to-r from-red-500 to-red-600"
+                            } animate-slideDown`}
                     >
                         {firstSubmissionCorrect ? (
                             <ArrowUp className="w-8 h-8 text-white animate-bounce" />
                         ) : (
-                                <ArrowDown className="w-8 h-8 text-white animate-bounce" />
-                            )}
+                            <ArrowDown className="w-8 h-8 text-white animate-bounce" />
+                        )}
                         <div className="flex items-center gap-2">
                             <div className="text-5xl font-bold text-white overflow-hidden h-16 flex items-center">
                                 <div className="animate-slotMachine">
@@ -165,9 +157,8 @@ firstSubmissionCorrect
                         title={isStarred ? "Unstar problem" : "Star problem"}
                     >
                         <Star
-                            className={`w-6 h-6 ${
-isStarred ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
-}`}
+                            className={`w-6 h-6 ${isStarred ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
+                                }`}
                         />
                     </button>
                     <div className="bg-gray-200 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
@@ -192,24 +183,22 @@ isStarred ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
                                     onChange={(e) => !firstSubmissionMade && onSelectAnswer(e.target.value)}
                                     disabled={firstSubmissionMade}
                                     className={`w-full p-3 rounded-xl border-2 text-lg leading-snug transition-all h-12
-${
-firstSubmissionMade
-? firstSubmissionCorrect
-? "border-green-500 bg-green-50 cursor-not-allowed"
-: "border-red-500 bg-red-50 cursor-not-allowed"
-: "border-gray-300 hover:border-gray-400 bg-white"
-}
+${firstSubmissionMade
+                                            ? firstSubmissionCorrect
+                                                ? "border-green-500 bg-green-50 cursor-not-allowed"
+                                                : "border-red-500 bg-red-50 cursor-not-allowed"
+                                            : "border-gray-300 hover:border-gray-400 bg-white"
+                                        }
 `}
                                     placeholder="Type your answer..."
                                 />
 
                                 {correctAnswerKey && (
                                     <div
-                                        className={`mt-4 p-4 rounded-lg border ${
-firstSubmissionCorrect
-? "bg-green-50 border-green-200"
-: "bg-blue-50 border-blue-200"
-}`}
+                                        className={`mt-4 p-4 rounded-lg border ${firstSubmissionCorrect
+                                                ? "bg-green-50 border-green-200"
+                                                : "bg-blue-50 border-blue-200"
+                                            }`}
                                     >
                                         {!firstSubmissionCorrect && (
                                             <div className="font-semibold text-blue-900 mb-2">
@@ -229,86 +218,80 @@ firstSubmissionCorrect
                                 )}
                             </div>
                         ) : (
-                                <>
-                                    {problem.answerChoices &&
-                                        Object.keys(problem.answerChoices).map((option, index) => {
-                                            const isSelected = selectedAnswer === option
+                            <>
+                                {problem.answerChoices &&
+                                    Object.keys(problem.answerChoices).map((option, index) => {
+                                        const isSelected = selectedAnswer === option
 
-                                            const isCorrect = option === correctAnswerKey;
-                                            const wasSubmitted = submittedAnswers.has(option);
+                                        const isCorrect = option === correctAnswerKey;
+                                        const wasSubmitted = submittedAnswers.has(option);
 
-                                            const showAsCorrect = wasSubmitted && isCorrect;
-                                            const showAsIncorrect = wasSubmitted && !isCorrect;
+                                        const showAsCorrect = wasSubmitted && isCorrect;
+                                        const showAsIncorrect = wasSubmitted && !isCorrect;
 
-                                            return (
-                                                <div key={option}>
-                                                    <button
-                                                        onClick={() => !mcqCorrectAnswerFound && handleSelectAnswer(option)}
-                                                        disabled={mcqCorrectAnswerFound}
-                                                        className={`w-full text-left p-4 rounded-xl border-2 transition ${
-showAsCorrect
-? "border-green-500 bg-green-50"
-: showAsIncorrect
-? "border-red-500 bg-red-50"
-: isSelected
-? "border-indigo-600 bg-indigo-50"
-: "border-gray-300 hover:border-gray-400 bg-white"
-} ${
-mcqCorrectAnswerFound ? "cursor-not-allowed" : "cursor-pointer"
-}`}
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div
-                                                                className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
-showAsCorrect
-? "bg-green-500 text-white"
-: showAsIncorrect
-? "bg-red-500 text-white"
-: isSelected
-? "bg-indigo-600 text-white"
-: "bg-gray-100 text-gray-700"
-}`}
-                                                            >
-                                                                {showAsCorrect ? "✓" : showAsIncorrect ? "✗" : labels[index]}
-                                                            </div>
-                                                            <span
-                                                                className="text-lg"
-                                                                ref={(choice) => {
-                                                                    answerChoiceRefs.current[index] = choice;
-                                                                }}
-                                                            >
-                                                                {option}
-                                                            </span>
+                                        return (
+                                            <div key={option}>
+                                                <button
+                                                    onClick={() => !mcqCorrectAnswerFound && handleSelectAnswer(option)}
+                                                    disabled={mcqCorrectAnswerFound}
+                                                    className={`w-full text-left p-4 rounded-xl border-2 transition ${showAsCorrect
+                                                            ? "border-green-500 bg-green-50"
+                                                            : showAsIncorrect
+                                                                ? "border-red-500 bg-red-50"
+                                                                : isSelected
+                                                                    ? "border-indigo-600 bg-indigo-50"
+                                                                    : "border-gray-300 hover:border-gray-400 bg-white"
+                                                        } ${mcqCorrectAnswerFound ? "cursor-not-allowed" : "cursor-pointer"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div
+                                                            className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${showAsCorrect
+                                                                    ? "bg-green-500 text-white"
+                                                                    : showAsIncorrect
+                                                                        ? "bg-red-500 text-white"
+                                                                        : isSelected
+                                                                            ? "bg-indigo-600 text-white"
+                                                                            : "bg-gray-100 text-gray-700"
+                                                                }`}
+                                                        >
+                                                            {showAsCorrect ? "✓" : showAsIncorrect ? "✗" : labels[index]}
                                                         </div>
-                                                    </button>
+                                                        <span
+                                                            className="text-lg"
+                                                            ref={(choice) => {
+                                                                answerChoiceRefs.current[index] = choice;
+                                                            }}
+                                                        >
+                                                            {option}
+                                                        </span>
+                                                    </div>
+                                                </button>
 
-                                                    {wasSubmitted && problem.answerChoices[option][1] && (
-                                                        <div className={`mt-2 p-3 rounded-lg border ${
-isCorrect 
-? "bg-green-50 border-green-200"
-: "bg-red-50 border-red-200"
-}`}>
-                                                            <div className={`font-semibold mb-1 ${
-isCorrect ? "text-green-900" : "text-red-900"
-}`}>
-                                                                {isCorrect ? "Correct!" : "Incorrect"}
-                                                            </div>
-                                                            <div className={`text-sm ${
-isCorrect ? "text-green-800" : "text-red-800"
-}`}
-                                                                ref = {(el) => {
-                                                                    frqAnswerExplanationRef.current[index] = el;
-                                                                }}
-                                                            >
-                                                                {problem.answerChoices[option][1]}
-                                                            </div>
+                                                {wasSubmitted && problem.answerChoices[option][1] && (
+                                                    <div className={`mt-2 p-3 rounded-lg border ${isCorrect
+                                                            ? "bg-green-50 border-green-200"
+                                                            : "bg-red-50 border-red-200"
+                                                        }`}>
+                                                        <div className={`font-semibold mb-1 ${isCorrect ? "text-green-900" : "text-red-900"
+                                                            }`}>
+                                                            {isCorrect ? "Correct!" : "Incorrect"}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                </>
-                            )}
+                                                        <div className={`text-sm ${isCorrect ? "text-green-800" : "text-red-800"
+                                                            }`}
+                                                            ref={(el) => {
+                                                                frqAnswerExplanationRef.current[index] = el;
+                                                            }}
+                                                        >
+                                                            {problem.answerChoices[option][1]}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -322,18 +305,18 @@ isCorrect ? "text-green-800" : "text-red-800"
                         Next Problem
                     </button>
                 ) : (
-                        <button
-                            onClick={handleSubmitClick}
-                            disabled={
-                                loading || 
-                                    (!firstSubmissionMade && !selectedAnswer) ||
-                                    (firstSubmissionMade && !currentAttemptAnswer)
-                            }
-                            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        >
-                            {loading ? "Submitting..." : "Submit"}
-                        </button>
-                    )}
+                    <button
+                        onClick={handleSubmitClick}
+                        disabled={
+                            loading ||
+                            (!firstSubmissionMade && !selectedAnswer) ||
+                            (firstSubmissionMade && !currentAttemptAnswer)
+                        }
+                        className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                        {loading ? "Submitting..." : "Submit"}
+                    </button>
+                )}
             </div>
 
             <style>{`
