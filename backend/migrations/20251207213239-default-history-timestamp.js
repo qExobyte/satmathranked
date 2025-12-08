@@ -12,7 +12,6 @@ exports.down = function(db) {
   return db.changeColumn('PROBLEM_HISTORY', 'timestamp', {
     type: 'datetime',
     notNull: true,
-    defaultValue: null
   });
 };
 

@@ -8,83 +8,130 @@ import type {Problem, Topic, TopicHistoryRow} from "../types/types.js";
 const router = express.Router();
 
 
+console.log("FILE LOADED");
+
 
 router.get("/next", async (req: Request, res: Response) => {
-    // 1. Computes user's current elos for every topic.
-    // 2. Determines weights for every topic based on current elos
-    // 3. Chooses topic probabilistically based on these weights
-    // 4. Fetches next problem from this topic at the optimal difficulty
+  console.log("CALLED");
+  const userId = Number(req.query.userId);
 
-    const userId = Number(req.query.userId);
+  const [topicRows] = await pool.query(
+    `SELECT id, name, weight
+       FROM TOPICS
+       ORDER BY id`
+  );
+  const topics = topicRows as Topic[];
 
-    const [topicRows] = await pool.query(
-        `SELECT id, name, weight FROM TOPICS ORDER BY id`
-    );
-    const topics = topicRows as Topic[];
+  // problem history
+  const [historyRows] = await pool.query(
+    `SELECT ph.problem_id,
+            ph.is_correct,
+            ph.timestamp,
+            p.topic_id,
+            ph.problem_rating AS difficulty
+     FROM PROBLEM_HISTORY ph
+     JOIN PROBLEMS p ON ph.problem_id = p.id
+     WHERE ph.user_id = ?
+     ORDER BY ph.timestamp ASC`,
+    [userId]
+  );
+  const history = historyRows as TopicHistoryRow[];
 
-    const topicElos = await computeTopicEloList(userId);
+  const topicElos = topics.map((topic) => {
+    const topicHistory = history.filter((h) => h.topic_id == topic.id);
+    return computeTopicElo(userId, topicHistory);
+  });
 
-    //select topic
-    const weights = topicElos.map((r) => 1 / (r ** 2));
-    const selectedTopicIndex = weightedChoice(weights);
-    const selectedTopicID = topics[selectedTopicIndex].id;
-    const selectedTopicElo = topicElos[selectedTopicIndex];
+  // select topic
+  const weights = topicElos.map((r) => 1 / r ** 2);
+  const selectedTopicIndex = weightedChoice(weights);
+  const selectedTopicID = topics[selectedTopicIndex].id;
+  const selectedTopicElo = topicElos[selectedTopicIndex];
 
-    //sample problem rating
-    const chosenDifficulty = chooseDifficulty(selectedTopicElo);
+  // sample problem difficulty
+  const chosenDifficulty = chooseDifficulty(selectedTopicElo);
 
+  // fetch the problem closest to chosenDifficulty AND include starred info
+  const [problemRows] = await pool.query(
+    `SELECT 
+        p.id,
+        p.difficulty,
+        p.topic_id AS topicId,
+        p.problem_text AS problemText,
+        p.is_frq AS isFrq,
+        p.answer_choices AS answerChoices,
+        p.image_url AS imageUrl,
+        EXISTS (
+            SELECT 1 FROM starred_problems sp 
+            WHERE sp.problem_id = p.id AND sp.user_id = ?
+        ) AS starred
+     FROM PROBLEMS p
+     WHERE p.topic_id = ?
+     ORDER BY ABS(p.difficulty - ?) ASC
+     LIMIT 1`,
+    [userId, selectedTopicID, chosenDifficulty]
+  );
 
-    //SQL query to fetch problem closest to sampledRating in selectedTopicID goes here
-    //placeholder: filter sampleProblems
-    const [problemRows] = await pool.query(
-        `SELECT id,
-difficulty,
-topic_id       as topicId,
-problem_text   as problemText,
-is_frq         as isFrq,
-answer_choices as answerChoices,
-image_url      as imageUrl
-FROM PROBLEMS
-WHERE topic_id = ?
-ORDER BY ABS(difficulty - ?) ASC LIMIT 1`,
-        [selectedTopicID, chosenDifficulty]
-    );
+  const problems = problemRows as (Problem & { starred: boolean })[];
 
-    const problems = problemRows as Problem[];
+  if (problems.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No problems found for this topic",
+    });
+  }
 
-    if (problems.length === 0) {
-        return res.status(404).json({
-            success: false,
-            message: "No problems found for this topic"
-        });
-    }
-    console.log(problems[0]);
-    return res.status(200).json({
-        problem: problems[0]
-    })
+  return res.status(200).json({
+    problem: problems[0],
+  });
 });
 
-router.post("/submit", (req: Request, res: Response) => {
-    console.log("called");
+
+/*"choices": {
+    "A. $x > 0$ and $y > 0$": [
+      true,
+      "This is correct. The point (8, 2) is located i
+    ],
+    "B. $x > 0$ and $y < 0$": [
+      false,
+      "This is incorrect. This system represents points in the fourth quadrant. While 8 > 0 is true, 2 < 0 is false, so the point (8, 2) does not satisfy this system."
+    ],
+    "C. $x < 0$ and $y > 0$": [
+      false,
+      "This is incorrect. This system represents points in the second quadrant. While 2 > 0 is true, 8 < 0 is false, so the point (8, 2) does not satisfy this system."
+    ],
+    "D. $x < 0$ and $y < 0$": [
+      false,
+      "This is incorrect. This system represents points in the third quadrant. Both 8 < 0 and 2 < 0 are false, so the point (8, 2) does not satisfy this system."
+    ]
+  }*/
+
+
+
+router.post("/submit", async (req: Request, res: Response) => {
+    console.log("SUBMIT CALLED");
     const { userId, problemId, answerChoice } = req.body as {
         userId: number;
         problemId: number;
         answerChoice: string | number;
     };
 
+    console.log("ABOUT TO RUN SQL");
+    const [results] = await pool.execute("SELECT answer_choices, difficulty FROM PROBLEMS WHERE id=?", [problemId])
+    
+    const answers = results[0].answer_choices;
+    const difficulty = results[0].difficulty;
+    console.log(answers);
+    console.log(difficulty);
 
-    //SQL query to fetch problem data by problemId goes here
-    const problem = pool.
+    let correctAnswer = false;
+    if (answerChoice in answers){
+        correctAnswer = answers[answerChoice].isCorrect;
+    }
 
-    const choiceKey = String(answerChoice);
-    const isCorrect = problem.answer_choices[choiceKey]?.[0] === "correct";
+    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct) VALUES (?, ?, ?, ?)",[userId, problemId, difficulty, correctAnswer]);
 
-    //SQL query to submit problem history goes here
-    //Also update problem elo. For now ill just send the elo update to the frontend
-    const userTopicElo = computeTopicElo(userId, problem.topic_id);
-    const eloUpdate = Math.round(newUserTopicElo - userTopicElo);
-
-    return res.json({ success: true, eloUpdate, correct: isCorrect });
+    return res.json({ success: true, eloUpdate: 20, correct: correctAnswer});
 });
 
 export default router;
