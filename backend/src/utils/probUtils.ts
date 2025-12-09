@@ -1,4 +1,4 @@
-function weightedChoice(weights: number[]) {
+function weightedChoice(weights: number[]): number {
     const total = weights.reduce((a, b) => a + b, 0);
     const threshold = Math.random() * total;
 
@@ -7,6 +7,8 @@ function weightedChoice(weights: number[]) {
         running += weights[i] || 0;
         if (running >= threshold) return i;
     }
+    // Fallback: return last index if nothing was selected
+    return weights.length - 1;
 }
 
 function randomNormal(mean: number, sd: number) {

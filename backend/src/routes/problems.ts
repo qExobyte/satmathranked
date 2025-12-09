@@ -7,7 +7,6 @@ import type { Problem, Topic, TopicHistoryRow } from "../types/types.js";
 
 const router = express.Router();
 
-
 router.get("/next", async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
 
@@ -41,8 +40,16 @@ router.get("/next", async (req: Request, res: Response) => {
   // select topic
   const weights = topicElos.map((r) => 1 / r ** 2);
   const selectedTopicIndex = weightedChoice(weights);
-  const selectedTopicID = topics[selectedTopicIndex].id;
-  const selectedTopicElo = topicElos[selectedTopicIndex];
+
+  if (selectedTopicIndex < 0 || selectedTopicIndex >= topics.length) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Invalid topic" });
+  }
+
+  const selectedTopic = topics[selectedTopicIndex]!;
+  const selectedTopicElo = topicElos[selectedTopicIndex]!;
+  const selectedTopicID = selectedTopic.id;
 
   // sample problem difficulty
   const chosenDifficulty = chooseDifficulty(selectedTopicElo);
@@ -83,29 +90,39 @@ router.get("/next", async (req: Request, res: Response) => {
 });
 
 router.post("/submit", async (req: Request, res: Response) => {
-    const { userId, problemId, answerChoice } = req.body as {
-        userId: number;
-        problemId: number;
-        answerChoice: string | number;
-    };
+  const { userId, problemId, answerChoice } = req.body as {
+    userId: number;
+    problemId: number;
+    answerChoice: string | number;
+  };
 
-    console.log("ABOUT TO RUN SQL");
-    const [results] = await pool.execute("SELECT answer_choices, difficulty, topic_id FROM PROBLEMS WHERE id=?", [problemId])
-    
-    const topic_id = results[0].topic_id;
-    const answers = results[0].answer_choices;
-    const difficulty = results[0].difficulty;
-    console.log(answers);
-    console.log(difficulty);
+  console.log("ABOUT TO RUN SQL");
+  const [results] = await pool.execute(
+    "SELECT answer_choices, difficulty, topic_id FROM PROBLEMS WHERE id=?",
+    [problemId]
+  );
 
-    let correctAnswer = false;
-    if (answerChoice in answers){
-        correctAnswer = answers[answerChoice].isCorrect;
-    }
+  const resultsArray = results as any[];
+  if (!resultsArray || resultsArray.length === 0) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Problem not found" });
+  }
 
-    // Get user's problem history BEFORE adding the new attempt
-    const [historyRows] = await pool.query(
-      `SELECT ph.problem_id,
+  const topic_id = resultsArray[0].topic_id;
+  const answers = resultsArray[0].answer_choices;
+  const difficulty = resultsArray[0].difficulty;
+  console.log(answers);
+  console.log(difficulty);
+
+  let correctAnswer = false;
+  if (answerChoice in answers) {
+    correctAnswer = answers[answerChoice].isCorrect;
+  }
+
+  // Get user's problem history BEFORE adding the new attempt
+  const [historyRows] = await pool.query(
+    `SELECT ph.problem_id,
               ph.is_correct,
               ph.timestamp,
               p.topic_id,
@@ -114,24 +131,25 @@ router.post("/submit", async (req: Request, res: Response) => {
        JOIN PROBLEMS p ON ph.problem_id = p.id
        WHERE ph.user_id = ?
        ORDER BY ph.timestamp ASC`,
-      [userId]
-    );
-    const history = historyRows as TopicHistoryRow[];
-    const topicHistory = history.filter(h => h.topic_id === topic_id);
-    
-    // Calculate previous ELOs
-    let prevTopicElo = computeTopicElo(userId, topicHistory);
-    let prevOverallElo = await computeUserElo(userId);
-    
-    // Insert the new result
-    const _ = await pool.execute("INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct, answer_text) VALUES (?, ?, ?, ?, ?)",
-      [userId, problemId, difficulty, correctAnswer, answerChoice]
-    );
-    console.log(correctAnswer);
-    
-    // Get updated history AFTER adding the new attempt
-    const [updatedHistoryRows] = await pool.query(
-      `SELECT ph.problem_id,
+    [userId]
+  );
+  const history = historyRows as TopicHistoryRow[];
+  const topicHistory = history.filter((h) => h.topic_id === topic_id);
+
+  // Calculate previous ELOs
+  let prevTopicElo = computeTopicElo(userId, topicHistory);
+  let prevOverallElo = await computeUserElo(userId);
+
+  // Insert the new result
+  const _ = await pool.execute(
+    "INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct, answer_text) VALUES (?, ?, ?, ?, ?)",
+    [userId, problemId, difficulty, correctAnswer, answerChoice]
+  );
+  console.log(correctAnswer);
+
+  // Get updated history AFTER adding the new attempt
+  const [updatedHistoryRows] = await pool.query(
+    `SELECT ph.problem_id,
               ph.is_correct,
               ph.timestamp,
               p.topic_id,
@@ -140,30 +158,31 @@ router.post("/submit", async (req: Request, res: Response) => {
        JOIN PROBLEMS p ON ph.problem_id = p.id
        WHERE ph.user_id = ?
        ORDER BY ph.timestamp ASC`,
-      [userId]
-    );
-    const updatedHistory = updatedHistoryRows as TopicHistoryRow[];
-    const updatedTopicHistory = updatedHistory.filter(h => h.topic_id === topic_id);
-    
-    // Calculate new ELOs
-    const newTopicElo = computeTopicElo(userId, updatedTopicHistory);
-    const newOverallElo = await computeUserElo(userId);
-    
-    // Calculate deltas
-    const topicEloDelta = (newTopicElo - prevTopicElo);
-    const overallEloDelta = (newOverallElo - prevOverallElo);
-    console.log(topicEloDelta)
-    console.log(overallEloDelta)
-    const categoryUpdate=[topic_id, topicEloDelta];
+    [userId]
+  );
+  const updatedHistory = updatedHistoryRows as TopicHistoryRow[];
+  const updatedTopicHistory = updatedHistory.filter(
+    (h) => h.topic_id === topic_id
+  );
 
-    return res.json({ 
-        success: true, 
-        categoryUpdate: categoryUpdate, 
-        eloUpdate: overallEloDelta, 
-        correct: correctAnswer
-    });
+  // Calculate new ELOs
+  const newTopicElo = computeTopicElo(userId, updatedTopicHistory);
+  const newOverallElo = await computeUserElo(userId);
+
+  // Calculate deltas
+  const topicEloDelta = newTopicElo - prevTopicElo;
+  const overallEloDelta = newOverallElo - prevOverallElo;
+  console.log(topicEloDelta);
+  console.log(overallEloDelta);
+  const categoryUpdate = [topic_id, topicEloDelta];
+
+  return res.json({
+    success: true,
+    categoryUpdate: categoryUpdate,
+    eloUpdate: overallEloDelta,
+    correct: correctAnswer,
+  });
 });
-
 
 router.get("/history", async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
@@ -206,7 +225,6 @@ router.get("/history", async (req: Request, res: Response) => {
   }
 });
 
-
 router.post("/star", async (req: Request, res: Response) => {
   const { userId, problemId } = req.body as {
     userId: number;
@@ -229,7 +247,6 @@ router.post("/star", async (req: Request, res: Response) => {
     });
   }
 });
-
 
 router.delete("/star", async (req: Request, res: Response) => {
   const { userId, problemId } = req.body as {

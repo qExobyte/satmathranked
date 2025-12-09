@@ -69,7 +69,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
                 'SELECT ID as id, Username as username, Profile_Info_Id as profile_info_id, Email_Address as email_address FROM USERS WHERE id = ?',
                 [insertId]
             );
-            user = (newUsers as User[])[0];
+            user = (newUsers as User[])[0] || {id: -1, username: "null", email_address: "null"}
         }
 
         // call backend methods for computing user and topic elos
@@ -84,7 +84,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         const topicEloData = topics.map((topic, index) => ({
             topicId: topic.id,
             topicName: topic.name,
-            elo: Math.round(topicElos[index])
+            elo: Math.round(topicElos[index] || 0)
         }));
 
         // Change this to whatever info we actually want

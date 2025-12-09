@@ -7,7 +7,7 @@ function computeElo (
   updateRating: number, //rating of user or problem to be updated
   opposingRating: number, //rating of the opposing user or problem
   isCorrect: boolean) : number {
-    const K = 50; //K-factor, we might want to change this
+    const K = 100; //K-factor, we might want to change this
     const expectedScore = 1 / (1 + Math.pow(10, (opposingRating - updateRating) / 400));
     const actualScore = isCorrect ? 1 : 0;
     const newRating = updateRating + K * (actualScore - expectedScore);

@@ -1,13 +1,6 @@
 // src/components/ProblemHistory.tsx
 import React, { useState, useEffect } from "react";
-import {
-  X,
-  Clock,
-  Filter,
-  CheckCircle,
-  XCircle,
-  Star,
-} from "lucide-react";
+import { X, Clock, Filter, CheckCircle, XCircle, Star } from "lucide-react";
 import { api } from "../services/api";
 import type { ProblemHistoryItem } from "../types";
 
@@ -57,15 +50,18 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
     });
 
   // Helper for computing correct answer from answerChoices
-  const getCorrectAnswer = (choices: Record<string, [boolean, string]>) => {
-    const found = Object.entries(choices).find(([, value]) => value.isCorrect === true);
+  const getCorrectAnswer = (
+    choices: Record<string, { isCorrect: boolean; explanation: string }>
+  ) => {
+    const found = Object.entries(choices).find(
+      ([, value]) => value.isCorrect === true
+    );
     return found ? found[0] : "N/A";
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">Problem History</h2>
@@ -83,9 +79,7 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
             <Clock className="w-5 h-5 text-gray-600" />
             <select
               value={sortBy}
-              onChange={(e) =>
-                setSortBy(e.target.value as "recent" | "oldest")
-              }
+              onChange={(e) => setSortBy(e.target.value as "recent" | "oldest")}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="recent">Most Recent</option>
@@ -99,11 +93,7 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
               value={filterBy}
               onChange={(e) =>
                 setFilterBy(
-                  e.target.value as
-                    | "all"
-                    | "correct"
-                    | "incorrect"
-                    | "starred"
+                  e.target.value as "all" | "correct" | "incorrect" | "starred"
                 )
               }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -176,7 +166,9 @@ export const ProblemHistory: React.FC<ProblemHistoryProps> = ({
 
                       {!item.correct && (
                         <div>
-                          <span className="text-gray-600">Correct answer: </span>
+                          <span className="text-gray-600">
+                            Correct answer:{" "}
+                          </span>
                           <span className="text-green-700 font-semibold">
                             {correctAnswer}
                           </span>

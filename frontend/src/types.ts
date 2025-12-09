@@ -10,6 +10,11 @@ export interface User {
     }>;
 }
 
+export interface AnswerChoice {
+    isCorrect: boolean;
+    explanation: string;
+}
+
 export interface Problem {
     id: number;
     difficulty: number;
@@ -17,7 +22,7 @@ export interface Problem {
     problemText: string;
     isFrq: boolean;
     starred: boolean;
-    answerChoices: Record<string, [boolean, string]> // map of answer choice to [correctness, explanation]
+    answerChoices: Record<string, AnswerChoice>
 }
 
 export interface SubmitAnswerResponse {
@@ -33,7 +38,7 @@ export interface ProblemHistoryItem {
   difficulty: string;
   userAnswer: string;
   correct: boolean;
-  answerChoices: Record<string, [boolean, string]>
+  answerChoices: Record<string, AnswerChoice>
   timestamp: string;
   starred: boolean;
 }
