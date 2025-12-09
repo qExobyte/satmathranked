@@ -7,12 +7,10 @@ import {
   Diamond,
   X,
   List,
-  ChevronDown,
-  ChevronRight,
   History,
 } from "lucide-react";
 import { Rnd } from "react-rnd";
-import type { User, Problem, SubmitAnswerResponse } from "../types";
+import type { User, Problem } from "../types";
 import { api } from "../services/api";
 import { ProblemCard } from "./ProblemCard";
 import { ProblemHistory } from "../components/ProblemHistory";

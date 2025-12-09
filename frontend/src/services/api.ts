@@ -1,5 +1,5 @@
 // src/services/api.ts
-import type { User, Problem, SubmitAnswerResponse, ProblemHistoryItem } from "../types";
+import type { Problem, SubmitAnswerResponse, ProblemHistoryItem } from "../types";
 
 
 export const api = {
