@@ -1,34 +1,38 @@
 export interface User {
-    id: number;
-    username: string;
-    email: string;
+  id: number;
+  username: string;
+  email: string;
+  elo: number;
+  topicEloData: Array<{
+    topicId: number;
+    topicName: string;
     elo: number;
-    topicEloData: Array<{
-        topicId: number;
-        topicName: string;
-        elo: number;
-    }>;
+  }>;
 }
 
 export interface AnswerChoice {
-    isCorrect: boolean;
-    explanation: string;
+  isCorrect: boolean;
+  explanation: string;
 }
 
 export interface Problem {
-    id: number;
-    difficulty: number;
-    topicId: string;
-    problemText: string;
-    isFrq: boolean;
-    starred: boolean;
-    answerChoices: Record<string, AnswerChoice>
+  id: number;
+  difficulty: number;
+  topicId: string;
+  problemText: string;
+  isFrq: boolean;
+  starred: boolean;
+  answerChoices: Record<string, AnswerChoice>;
 }
 
 export interface SubmitAnswerResponse {
-    eloUpdate: number;
-    correct: boolean;
-    categoryUpdate: [number, number];
+  topicEloData: Array<{
+    topicId: number;
+    topicName: string;
+    elo: number;
+  }>;
+  correct: boolean;
+  overallElo: number;
 }
 
 export interface ProblemHistoryItem {
@@ -38,7 +42,7 @@ export interface ProblemHistoryItem {
   difficulty: string;
   userAnswer: string;
   correct: boolean;
-  answerChoices: Record<string, AnswerChoice>
+  answerChoices: Record<string, AnswerChoice>;
   timestamp: string;
   starred: boolean;
 }

@@ -133,22 +133,17 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
 
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
-      setEloUpdateAmount(result.eloUpdate);
-      const [topicId, topicUpdate] = result.categoryUpdate;
-      setTopicEloData(prevTopics => 
-        prevTopics.map(topic => 
-          topic.topicId === topicId 
-            ? { ...topic, elo: topic.elo + topicUpdate }
-            : topic
-        )
-      );
+      setTopicEloData(result.topicEloData)
+      
       const oldElo = elo;
-      const newElo = elo + result.eloUpdate;
+      const newElo = result.overallElo;
+      const eloUpdate = newElo - oldElo;
+      setEloUpdateAmount(eloUpdate);
       setElo(newElo);
 
       const duration = 1500;
       const steps = 30;
-      const increment = result.eloUpdate / steps;
+      const increment = eloUpdate / steps;
       let currentStep = 0;
       const interval = setInterval(() => {
         currentStep++;
