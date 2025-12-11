@@ -32,9 +32,19 @@ export interface ProblemHistoryEntry {
 }
 
 export interface TopicHistoryRow {
+    id: number;
     problem_id: number;
     is_correct: boolean;
     timestamp: Date;
     topic_id: number;
     difficulty: number;
+}
+
+export interface Streak {
+    id: number;
+    user_id: number;
+    latest_problem: number;
+    current_streak: number;
+    longest_streak: number;
+    last_activity_date: Date;
 }

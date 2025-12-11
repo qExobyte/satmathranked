@@ -48,7 +48,7 @@ export const api = {
       }
     );
     const data = await res.json();
-    return { topicEloData: data.topicElos, correct: data.correct, overallElo: data.overallElo };
+    return { topicEloData: data.topicElos, correct: data.correct, overallElo: data.overallElo, streak: data.streak };
   },
 
   starProblem: async (userId: number, problemId: number): Promise<void> => {

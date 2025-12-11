@@ -1,9 +1,18 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { computeUserElo, computeTopicElo, computeTopicEloList } from "../utils/elo.js";
+import {
+  computeUserElo,
+  computeTopicElo,
+  computeTopicEloList,
+} from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import pool from "../db_config.js";
-import type { Problem, Topic, TopicHistoryRow } from "../types/types.js";
+import type {
+  Problem,
+  Topic,
+  TopicHistoryRow,
+  Streak,
+} from "../types/types.js";
 
 const router = express.Router();
 
@@ -19,7 +28,8 @@ router.get("/next", async (req: Request, res: Response) => {
 
   // problem history
   const [historyRows] = await pool.query(
-    `SELECT ph.problem_id,
+    `SELECT ph.id,
+            ph.problem_id,
             ph.is_correct,
             ph.timestamp,
             p.topic_id,
@@ -42,9 +52,7 @@ router.get("/next", async (req: Request, res: Response) => {
   const selectedTopicIndex = weightedChoice(weights);
 
   if (selectedTopicIndex < 0 || selectedTopicIndex >= topics.length) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Invalid topic" });
+    return res.status(404).json({ success: false, message: "Invalid topic" });
   }
 
   const selectedTopic = topics[selectedTopicIndex]!;
@@ -84,7 +92,7 @@ router.get("/next", async (req: Request, res: Response) => {
     });
   }
 
-  console.log(problems[0])
+  console.log(problems[0]);
 
   return res.status(200).json({
     problem: problems[0],
@@ -128,7 +136,8 @@ router.post("/submit", async (req: Request, res: Response) => {
 
   // Get updated history AFTER adding the new attempt
   const [updatedHistoryRows] = await pool.query(
-    `SELECT ph.problem_id,
+    `SELECT ph.id,
+              ph.problem_id,
               ph.is_correct,
               ph.timestamp,
               p.topic_id,
@@ -142,29 +151,50 @@ router.post("/submit", async (req: Request, res: Response) => {
   const updatedHistory = updatedHistoryRows as TopicHistoryRow[];
 
   // Calculate new ELOs
-    const [topicRows] = await pool.query(
+  const [topicRows] = await pool.query(
     `SELECT id, name, weight
        FROM TOPICS
        ORDER BY id`
   );
   const topics = topicRows as Topic[];
-  
+  const lastPhId = updatedHistory[updatedHistory.length-1]?.id;
 
   const newTopicElos = await computeTopicEloList(userId);
   const topicEloData = topics.map((topic, index) => ({
-            topicId: topic.id,
-            topicName: topic.name,
-            elo: Math.round(newTopicElos[index] || 0)
-        }));
-  console.log(topicEloData);
-  const newOverallElo = await computeUserElo(userId);
+    topicId: topic.id,
+    topicName: topic.name,
+    elo: Math.round(newTopicElos[index] || 0),
+  }));
 
+  // Update streaks
+  const [existingStreak] = await pool.query(
+    `SELECT * FROM STREAKS WHERE user_id=?`,
+    [userId]
+  );
+  let streakCount;
+  if (Array.isArray(existingStreak) && existingStreak.length > 0) {
+    const streak = existingStreak[0] as Streak;
+    const updatedStreakCount = correctAnswer ? streak.current_streak + 1 : 0;
+    const longestStreak =
+      updatedStreakCount > streak.longest_streak
+        ? updatedStreakCount
+        : streak.longest_streak;
+    const [updateStreak] = await pool.query(
+      `UPDATE STREAKS 
+    SET latest_problem=?, current_streak=?, longest_streak=?, last_activity_date=NOW()`,
+      [lastPhId, updatedStreakCount, longestStreak]
+    );
+    streakCount = updatedStreakCount;
+  }
+
+  const newOverallElo = await computeUserElo(userId);
 
   return res.json({
     success: true,
     topicElos: topicEloData,
     overallElo: newOverallElo,
     correct: correctAnswer,
+    streak: streakCount,
   });
 });
 
