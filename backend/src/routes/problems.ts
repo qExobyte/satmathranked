@@ -129,7 +129,7 @@ router.post("/submit", async (req: Request, res: Response) => {
   }
 
   // Insert the new result
-  const _ = await pool.execute(
+  const [insertResult] = await pool.execute(
     "INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct, answer_text) VALUES (?, ?, ?, ?, ?)",
     [userId, problemId, difficulty, correctAnswer, answerChoice]
   );
@@ -157,7 +157,9 @@ router.post("/submit", async (req: Request, res: Response) => {
        ORDER BY id`
   );
   const topics = topicRows as Topic[];
-  const lastPhId = updatedHistory[updatedHistory.length-1]?.id;
+  const lastPhId = (insertResult as any).insertId;
+
+  console.log("problem history id:" + lastPhId);
 
   const newTopicElos = await computeTopicEloList(userId);
   const topicEloData = topics.map((topic, index) => ({
@@ -181,8 +183,8 @@ router.post("/submit", async (req: Request, res: Response) => {
         : streak.longest_streak;
     const [updateStreak] = await pool.query(
       `UPDATE STREAKS 
-    SET latest_problem=?, current_streak=?, longest_streak=?, last_activity_date=NOW()`,
-      [lastPhId, updatedStreakCount, longestStreak]
+    SET current_streak=?, longest_streak=?, last_activity_date=NOW() WHERE user_id=?`,
+      [updatedStreakCount, longestStreak, userId]
     );
     streakCount = updatedStreakCount;
   }
