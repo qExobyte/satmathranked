@@ -8,10 +8,7 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD!,
     database: process.env.DB_NAME!,
     connectionLimit: 10,
-    queueLimit: 0,
-    socketPath: process.env.CLOUD_SQL_CONNECTION_NAME 
-    ? `/cloudsql/${process.env.CLOUD_SQL_CONNECTION_NAME}`
-    : undefined!
+    queueLimit: 0
 });
 
 console.log('DB Config:', {
