@@ -7,6 +7,7 @@
     "start": "node dist/server.js",
     "build": "tsc",
     "dev": "nodemon --exec tsx src/server.ts",
+    "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
