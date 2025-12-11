@@ -8,6 +8,7 @@ export interface User {
     topicName: string;
     elo: number;
   }>;
+  streak: number;
 }
 
 export interface AnswerChoice {
@@ -33,6 +34,7 @@ export interface SubmitAnswerResponse {
   }>;
   correct: boolean;
   overallElo: number;
+  streak: number;
 }
 
 export interface ProblemHistoryItem {

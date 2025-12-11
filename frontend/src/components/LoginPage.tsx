@@ -28,6 +28,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           email: userInfo.email || "",
           elo: userInfo.elo,
           topicEloData: userInfo.topicEloData || [],
+          streak: userInfo.streak || 0,
         };
 
         setWelcomeUser(user);

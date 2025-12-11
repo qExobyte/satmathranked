@@ -8,6 +8,7 @@ import {
   X,
   List,
   History,
+  Flame,
 } from "lucide-react";
 import { Rnd } from "react-rnd";
 import type { User, Problem } from "../types";
@@ -40,6 +41,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
   const [isStarred, setIsStarred] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [topicEloData, setTopicEloData] = useState(user.topicEloData);
+  const [streak, setStreak] = useState(user.streak);
 
   // Submission flow state
   const [firstSubmissionMade, setFirstSubmissionMade] = useState(false);
@@ -133,8 +135,10 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
 
       setFirstSubmissionMade(true);
       setFirstSubmissionCorrect(result.correct);
-      setTopicEloData(result.topicEloData)
-      
+      setTopicEloData(result.topicEloData);
+      setStreak(result.streak);
+      console.log(streak);
+
       const oldElo = elo;
       const newElo = result.overallElo;
       const eloUpdate = newElo - oldElo;
@@ -180,7 +184,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
     }
   };
 
-   const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async () => {
     try {
       await api.deleteAccount(user.id);
       onLogout();
@@ -232,11 +236,21 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
             </div>
 
             {/* Overall ELO */}
-            <div className="flex items-center gap-2">
-              <Diamond className="w-6 h-6 text-indigo-600" />
-              <span className="text-2xl font-bold text-gray-900">
-                {animatedElo}
-              </span>
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <Diamond className="w-6 h-6 text-indigo-600" />
+                <span className="text-2xl font-bold text-gray-900">
+                  {animatedElo}
+                </span>
+              </div>
+
+              {/* Streak */}
+              <div className="flex items-center gap-1">
+                <Flame className="w-6 h-6 text-orange-400" />
+                <span className="text-xl font-semibold text-gray-900">
+                  {streak}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -350,9 +364,12 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout }) => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Delete Account</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Delete Account
+            </h2>
             <p className="text-gray-700 mb-6">
-              Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.
+              Are you sure you want to delete your account? This action cannot
+              be undone and all your data will be permanently removed.
             </p>
             <div className="flex gap-3 justify-end">
               <button
