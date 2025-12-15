@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Diamond } from "lucide-react";
+import { Award, Diamond, TrendingUp } from "lucide-react";
 import type { User } from "../types";
 import { api } from "../services/api";
 import { ScrollAnimation } from "./ScrollAnimation";
@@ -21,7 +21,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     if (userParam) {
       try {
         const userInfo = JSON.parse(decodeURIComponent(userParam));
-
         const user: User = {
           id: userInfo.id,
           username: userInfo.name || "User",
@@ -33,15 +32,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
         setWelcomeUser(user);
         setShowWelcome(true);
+        window.history.replaceState({}, document.title, window.location.pathname);
 
-        // Clean up URL
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname
-        );
-
-        // Proceed to main app after 3 seconds
         setTimeout(() => {
           onLogin(user);
         }, 3000);
@@ -55,9 +47,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const handleGoogleLogin = async () => {
     setError("");
     setLoading(true);
-
     try {
-      await api.login(); // This redirects to Google
+      await api.login();
     } catch (err) {
       setError("Login failed. Please try again.");
       setLoading(false);
@@ -65,67 +56,69 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
-      <ScrollAnimation />
+    <div className="min-h-screen dark:from-slate-950 dark:via-indigo-950 dark:to-purple-950 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
+      <ScrollAnimation/>
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
+        <div className="absolute w-96 h-96 bg-purple-500/20 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
 
       {showWelcome ? (
-        <div className="bg-white rounded-3xl shadow-2xl p-16 w-full max-w-lg relative z-10 text-center animate-fadeIn">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              Welcome, {welcomeUser?.username}!
-            </h2>
-          </div>
-          <div className="flex items-center justify-center gap-3 text-6xl font-bold text-indigo-600 mb-6">
+        <div className="bg-white/10 dark:bg-white/10 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-16 w-full max-w-lg relative z-10 border border-white/20 dark:border-white/20 border-gray-200 text-center">
+          <h2 className="text-3xl font-bold  dark:text-white text-gray-900 mb-4">
+            Welcome, {welcomeUser?.username}!
+          </h2>
+          <div className="flex items-center justify-center gap-3 text-6xl font-bold  dark:text-indigo-400 text-indigo-600 mb-6">
             <Diamond className="w-16 h-16" />
             <span>{welcomeUser?.elo}</span>
           </div>
-          <p className="text-xl text-gray-700 font-semibold">
+          <p className="text-xl  dark:text-indigo-200 text-indigo-700 font-semibold">
             Answer questions to improve your rank!
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-2xl p-12 w-full max-w-lg relative z-10">
+        <div className="bg-white/10 dark:bg-white/10 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-12 w-full max-w-md relative z-10 border border-white/20 dark:border-white/20 border-gray-200">
           <div className="text-center mb-10">
-            <div className="text-5xl font-bold text-indigo-600 mb-3">
-              satmathranked
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-6">
+              <Diamond className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Your infinite scroll for SAT math problems
-            </h1>
+            <h1 className="text-4xl font-bold  dark:text-white text-gray-900 mb-2">satmathranked</h1>
+            <p className=" dark:text-indigo-200 text-indigo-700">Infinite scroll for SAT Math Problems</p>
           </div>
 
-          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-8 mb-8">
-            <div className="text-center mb-6">
-              <p className="text-lg font-semibold text-gray-700">
-                Sign in with Google
-              </p>
-            </div>
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-50 transition shadow-sm disabled:opacity-50"
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </div>
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full  dark:bg-white bg-gray-900 dark:text-gray-900 text-white py-4 px-6 rounded-xl font-semibold dark:hover:bg-gray-100 hover:bg-gray-800 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 dark:border-gray-900 border-white"></div>
+                Signing in...
+              </>
+            ) : (
+              "Sign in with Google"
+            )}
+          </button>
 
           {error && (
-            <div className="text-center text-sm text-red-600 bg-red-50 py-2 px-4 rounded-lg">
+            <div className="mt-4 text-center text-sm dark:text-red-300 text-red-700 bg-red-500/20 dark:bg-red-500/20 bg-red-100 py-2 px-4 rounded-lg border border-red-500/30 dark:border-red-500/30 border-red-300">
               {error}
             </div>
           )}
+
+          <div className="mt-8 grid grid-cols-2 gap-4 text-center">
+            <div className="bg-white/5 dark:bg-white/5 bg-indigo-50 backdrop-blur rounded-xl p-3 border border-white/10 dark:border-white/10 border-indigo-200">
+              <TrendingUp className="w-5 h-5  dark:text-indigo-400 text-indigo-600 mx-auto mb-1" />
+              <p className="text-xs dark:text-indigo-200 text-indigo-700">Adaptive problem serving tailored to your strengths and weaknesses</p>
+            </div>
+            <div className="bg-white/5 dark:bg-white/5 bg-purple-50 backdrop-blur rounded-xl p-3 border border-white/10 dark:border-white/10 border-purple-200">
+              <Award className="w-5 h-5  dark:text-purple-400 text-purple-600 mx-auto mb-1" />
+              <p className="text-xs dark:text-purple-200 text-purple-700">Raise your ELO and climb the leaderboards</p>
+            </div>
+          </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-in;
-        }
-      `}</style>
     </div>
   );
 };

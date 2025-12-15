@@ -19,7 +19,7 @@ export const ScrollAnimation: React.FC = () => {
           {[...problems, ...problems, ...problems].map((problem, i) => (
             <div
               key={i}
-              className="text-6xl font-bold text-indigo-900 whitespace-nowrap text-center"
+              className="text-6xl font-bold text-indigo-900 dark:text-indigo-100 whitespace-nowrap text-center"
             >
               {problem}
             </div>
