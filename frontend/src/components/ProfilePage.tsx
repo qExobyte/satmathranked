@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { User } from "../types";
 import {
-  Award,
   Diamond,
   Flame,
   TrendingUp,
@@ -9,8 +8,10 @@ import {
   History,
   LogOut,
   Trash2,
+  Crown,
 } from "lucide-react";
 import { ProblemHistory } from "./ProblemHistory";
+import { api } from "../services/api";
 
 export const ProfilePage: React.FC<{
   user: User;
@@ -20,6 +21,16 @@ export const ProfilePage: React.FC<{
 }> = ({ user, onBack, onLogout, onDeleteAccount }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [longestStreak, setLongestStreak] = useState<Number>(0);
+
+  useEffect( ()=>{
+    loadLongestStreak();
+  }, [user.id]);
+
+  const loadLongestStreak = async ()=>{
+    const streak = await api.getLongestStreak(user.id);
+    setLongestStreak(streak);
+  };
 
   return (
     <div className="
@@ -71,19 +82,25 @@ export const ProfilePage: React.FC<{
 
           {/* Stats Grid */}
           <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {[
                 {
                   label: "Overall ELO",
-                  value: user.elo,
+                  value: user.elo as any,
                   icon: <Diamond className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />,
                   text: "text-indigo-700 dark:text-indigo-200",
                 },
                 {
                   label: "Current Streak",
-                  value: user.streak,
+                  value: user.streak as any,
                   icon: <Flame className="w-6 h-6 text-orange-500 dark:text-orange-400" />,
                   text: "text-orange-700 dark:text-orange-200",
+                },
+                {
+                    label: "Longest Streak",
+                    value: longestStreak as any,
+                    icon: <Crown className="w-6 h-6 text-orange-500 dark:text-orange-400"/>,
+                    text: "text-orange-700 dark:text-orange-200"
                 },
                 
               ].map(({ label, value, icon, text }) => (

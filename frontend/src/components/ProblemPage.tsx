@@ -28,10 +28,7 @@ interface ProblemPageProps {
   onLogout: () => void;
 }
 
-export const ProblemPage: React.FC<{
-  user: User;
-  onLogout: () => void;
-}> = ({ user, onLogout}) => {
+export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -205,7 +202,6 @@ export const ProblemPage: React.FC<{
         <div className="absolute w-96 h-96  dark:bg-indigo-500/20 bg-indigo-300/30 rounded-full blur-3xl top-0 -right-48"></div>
         <div className="absolute w-96 h-96  dark:bg-purple-500/20 bg-purple-300/30 rounded-full blur-3xl bottom-0 -left-48"></div>
       </div>
-      <ScrollAnimation/>
 
       {/* Header */}
       <div className="dark:bg-white/5 bg-white/80 backdrop-blur-xl shadow-sm border-b border-white/10 dark:border-white/10 border-gray-200 sticky top-0 z-30">

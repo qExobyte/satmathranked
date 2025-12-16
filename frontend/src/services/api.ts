@@ -90,7 +90,15 @@ export const api = {
       `${import.meta.env.VITE_API_URL}/problems/history?userId=${userId}`
     );
     const data = await res.json();
-    console.log(data.history);
     return data.history;
+  },
+
+  getLongestStreak: async (userId: number): Promise<Number> =>{
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/users/longest_streak?userId=${userId}`
+    );
+    const data = await res.json();
+    console.log(data.longestStreak);
+    return data.longestStreak;
   },
 };

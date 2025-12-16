@@ -19,20 +19,7 @@ interface ProblemCardProps {
   loading: boolean;
 }
 
-export const ProblemCard: React.FC<{
-  problem: Problem;
-  selectedAnswer: string | null;
-  firstSubmissionMade: boolean;
-  firstSubmissionCorrect: boolean | null;
-  eloUpdateAmount: number;
-  animatedElo: number;
-  isStarred: boolean;
-  onSelectAnswer: (answer: string) => void;
-  onSubmit: () => void;
-  onNext: () => void;
-  onToggleStar: () => void;
-  loading: boolean;
-}> = ({
+export const ProblemCard: React.FC<ProblemCardProps> = ({
   problem,
   selectedAnswer,
   firstSubmissionMade,
