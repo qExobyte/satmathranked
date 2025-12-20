@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
+  currentStreak Int @default(0)
+  longestStreak Int @default(0)
+  overallElo Int @default(500)
+
+  TopicElo TopicElo[]
+  problemHistory ProblemHistory[]
+  starredProblems StarredProblem[]
+}
+
+model Problem {
+  id        Int       @id @default(autoincrement())
+  difficulty  Int
+  problemText String
+  topicId     Int
+  isFrq     Boolean
+  answerChoices Json
+  source     String?
+
+  problemHistory ProblemHistory[]
+  starredBy StarredProblem[]
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
+model ProblemHistory {
+  id        Int       @id @default(autoincrement())
+  userId     Int
+  problemId  Int
+  problemDifficulty Int
+  isCorrect     Boolean
+  answerText     String
+  timestamp   DateTime  @default(now())
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model Topic {
+  id        Int       @id @default(autoincrement())
+  name String
+  weight Float
+
+
+  problems Problem[]
+  TopicElo TopicElo[]
+}
+
+model TopicElo {
+  id Int @id @default(autoincrement())
+  topicId Int
+  userId Int
+  elo Int @default(500)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, userId])
+}
+
+model StarredProblem{
+  id Int @id @default(autoincrement())
+  userId Int
+  problemId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+}

@@ -1,9 +1,8 @@
 import express from "express";
 import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
-import pool from "../db_config.js";
-import type { Topic, User, Streak } from "../types/types.js";
-import { computeTopicEloList, computeUserElo } from "../utils/elo.js";
+import prisma from "../db_config.js";
+import type { Topic, User } from "../types/types.js";
 
 const router = express.Router();
 
@@ -52,72 +51,55 @@ router.get("/google/callback", async (req: Request, res: Response) => {
         .json({ success: false, message: "Failed to get user info" });
     }
 
-    const [existingUsers] = await pool.query(
-      "SELECT ID as id, Username as username, Email_Address as email_address FROM USERS WHERE email_address = ?",
-      [payload.email]
-    );
+    let user = await prisma.user.findUnique({
+      where: {
+        email: payload.email!,
+      },
+    });
 
-    let user: User;
-    if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-      user = existingUsers[0] as User;
-    } else {
-      // User doesn't exist, create new user
-      const [result] = await pool.query(
-        "INSERT INTO USERS (Username, Email_Address) VALUES (?, ?)",
-        [payload.name, payload.email]
-      );
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          username: payload.name!,
+          email: payload.email!,
+        },
+      });
+      const topics = await prisma.topic.findMany({
+        orderBy: {id: "asc"},
+      });
 
-      const insertId = (result as any).insertId;
-      const [newUsers] = await pool.query(
-        "SELECT ID as id, Username as username, Profile_Info_Id as profile_info_id, Email_Address as email_address FROM USERS WHERE id = ?",
-        [insertId]
-      );
-      user = (newUsers as User[])[0] || {
-        id: -1,
-        username: "null",
-        email_address: "null",
-      };
-      //create streak entry for new user
-      const [createStreak] = await pool.query(
-        `INSERT INTO STREAKS
-      (user_id, current_streak, longest_streak, last_activity_date)
-       VALUES(?, 0, 0, NOW())`,
-        [user.id]
-      );
+    await prisma.topicElo.createMany({
+        data: topics.map(topic => ({
+            userId: user!.id,
+            topicId: topic.id,
+            elo: 500,
+        })),
+      });
     }
 
-    // call backend methods for computing user and topic elos
-    const elo = await computeUserElo(user.id);
-    const topicElos = await computeTopicEloList(user.id);
+    const topicElos = await prisma.topicElo.findMany({
+      where: { userId: user.id },
+      include: { topic: true },
+      orderBy: { topicId: "asc" },
+    });
 
-    const [topicRows] = await pool.query(
-      `SELECT id, name FROM TOPICS ORDER BY id`
-    );
-    const topics = topicRows as Topic[];
 
-    const topicEloData = topics.map((topic, index) => ({
-      topicId: topic.id,
-      topicName: topic.name,
-      elo: Math.round(topicElos[index] || 0),
+
+    const topicEloData = topicElos.map((topicElo) => ({
+      topicId: topicElo.topicId,
+      topicName: topicElo.topic.name,
+      elo: Math.round(topicElo.elo || 0),
     }));
 
-    //get users streak count
-    const [streakRows] = await pool.query(
-        `SELECT * FROM STREAKS WHERE user_id=?`, [user.id]
-    );
-    const streakCount = ((streakRows as Streak[])[0] || {current_streak: 0}).current_streak;
 
-    // Change this to whatever info we actually want
     const userInfo = {
-      //googleId: payload.sub,
       id: user.id,
-      email: user.email_address,
+      email: user.email,
       name: user.username,
-      elo: elo,
+      elo: user.overallElo,
       topicEloData: topicEloData,
-      streak: streakCount,
-      //picture: payload.picture,
-      //email_verified: payload.email_verified
+      streak: user.currentStreak,
+
     };
 
     // Redirect to frontend with user info (name and email)
