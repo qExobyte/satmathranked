@@ -1,2 +1,4 @@
 database.json
 deploy.ps1
+/src/generated/prisma
+docker-compose.yml

@@ -116,11 +116,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         </div>
       )}
 
-      <div className="bg-white/5 dark:bg-white/5 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-12 relative overflow-hidden border border-white/10 dark:border-white/10 border-gray-200">
+      <div className="dark:bg-white/5 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-12 relative overflow-hidden borderdark:border-white/10 border-gray-200">
         <div className="absolute top-6 right-6 flex gap-2">
           <button
             onClick={onToggleStar}
-            className="p-2.5 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
+            className="p-2.5 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
             title={isStarred ? "Unstar problem" : "Star problem"}
           >
             <Star

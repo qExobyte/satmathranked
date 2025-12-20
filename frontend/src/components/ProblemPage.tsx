@@ -204,26 +204,26 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
       </div>
 
       {/* Header */}
-      <div className="dark:bg-white/5 bg-white/80 backdrop-blur-xl shadow-sm border-b border-white/10 dark:border-white/10 border-gray-200 sticky top-0 z-30">
+      <div className="dark:bg-white/5 bg-white/80 backdrop-blur-xl shadow-sm border-b dark:border-white/10 border-gray-200 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
               <button
                 onClick={() => setShowCategoryMenu(!showCategoryMenu)}
-                className="p-2.5 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
+                className="p-2.5 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
                 title="Topic ELO Breakdown"
               >
                 <List className="w-5 h-5 dark:text-gray-200 text-gray-700" />
               </button>
               {showCategoryMenu && (
-                <div className="absolute left-0 mt-2 w-96  dark:bg-slate-900 bg-white rounded-2xl shadow-xl border border-white/20 dark:border-white/20 border-gray-200 py-3 z-20 max-h-[32rem] overflow-y-auto">
-                  <div className="px-5 py-3 border-b border-white/10 dark:border-white/10 border-gray-200 sticky top-0 dark:bg-slate-900 bg-white">
+                <div className="absolute left-0 mt-2 w-96  dark:bg-slate-900 bg-white rounded-2xl shadow-xl borderdark:border-white/20 border-gray-200 py-3 z-20 max-h-[32rem] overflow-y-auto">
+                  <div className="px-5 py-3 border-b dark:border-white/10 border-gray-200 sticky top-0 dark:bg-slate-900 bg-white">
                     <div className="font-semibold  dark:text-white text-gray-900">Topic ELO Breakdown</div>
                   </div>
                   {topicEloData.map((topic) => (
                     <div
                       key={topic.topicId}
-                      className="px-5 py-3 hover:bg-white/5 dark:hover:bg-white/5 hover:bg-gray-50 transition"
+                      className="px-5 py-3 dark:hover:bg-white/5 hover:bg-gray-50 transition"
                     >
                       <div className="flex items-center justify-between">
                         <span className=" dark:text-gray-200 text-gray-700 font-medium">{topic.topicName}</span>
@@ -259,7 +259,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
 
             <button
               className={`p-2.5 rounded-xl transition-all hover:scale-110 ${
-                showDesmos ? "bg-white/10 dark:bg-white/10 bg-indigo-100" : "hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100"
+                showDesmos ? " dark:bg-white/10 bg-indigo-100" : " dark:hover:bg-white/10 hover:bg-gray-100"
               }`}
               title="Desmos Calculator"
               onClick={() => setShowDesmos(!showDesmos)}
@@ -268,7 +268,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
             </button>
 
             <button
-              className="p-2.5 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
+              className="p-2.5 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
               title="Formula Sheet"
               onClick={() => setShowFormulaSheet(!showFormulaSheet)}
             >
@@ -278,14 +278,14 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="p-2.5 hover:bg-white/10 dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
+                className="p-2.5  dark:hover:bg-white/10 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
                 title="Profile"
               >
                 <UserIcon className="w-5 h-5  dark:text-gray-200 text-gray-700" />
               </button>
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56  dark:bg-slate-900 bg-white rounded-2xl shadow-xl border border-white/20 dark:border-white/20 border-gray-200 py-2 z-20 overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r dark:from-indigo-500/20 dark:to-purple-500/20 from-indigo-50 to-purple-50 border-b border-white/10 dark:border-white/10 border-gray-200">
+                <div className="absolute right-0 mt-2 w-56  dark:bg-slate-900 bg-white rounded-2xl shadow-xl border dark:border-white/20 border-gray-200 py-2 z-20 overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r dark:from-indigo-500/20 dark:to-purple-500/20 from-indigo-50 to-purple-50 border-b dark:border-white/10 border-gray-200">
                     <div className="font-semibold  dark:text-white text-gray-900">{user.username}</div>
                     <div className="text-sm  dark:text-gray-300 text-gray-600">{user.email}</div>
                   </div>
@@ -294,7 +294,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
                       setShowProfileMenu(false);
                       setShowProfile(true);
                     }}
-                    className="w-full text-left px-4 py-3 dark:text-gray-200 text-gray-700 hover:bg-white/5 dark:hover:bg-white/5 hover:bg-gray-50 transition flex items-center gap-2"
+                    className="w-full text-left px-4 py-3 dark:text-gray-200 text-gray-700 dark:hover:bg-white/5 hover:bg-gray-50 transition flex items-center gap-2"
                   >
                     <UserIcon className="w-4 h-4" />
                     View Profile
@@ -304,7 +304,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
                       setShowProfileMenu(false);
                       onLogout();
                     }}
-                    className="w-full text-left px-4 py-3 dark:text-gray-200 text-gray-700 hover:bg-white/5 dark:hover:bg-white/5 hover:bg-gray-50 transition flex items-center gap-2"
+                    className="w-full text-left px-4 py-3 dark:text-gray-200 text-gray-700  dark:hover:bg-white/5 hover:bg-gray-50 transition flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -319,7 +319,7 @@ export const ProblemPage: React.FC<ProblemPageProps> = ({ user, onLogout}) => {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-12 relative z-10">
         {loading && !problem ? (
-          <div className="bg-white/5 dark:bg-white/5 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border border-white/10 dark:border-white/10 border-gray-200">
+          <div className="dark:bg-white/5 bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border dark:border-white/10 border-gray-200">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-500 mx-auto"></div>
             <p className="mt-6 dark:text-gray-300 text-gray-600 text-lg">Loading problem...</p>
           </div>

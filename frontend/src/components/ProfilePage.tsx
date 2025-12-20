@@ -164,7 +164,7 @@ export const ProfilePage: React.FC<{
               className="
                 w-full py-4 px-6 rounded-xl font-semibold mb-6 transition border flex items-center justify-center gap-3
                 bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-600
-                dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/20
+                dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:border-indigo-700
               "
             >
               <History className="w-5 h-5" />

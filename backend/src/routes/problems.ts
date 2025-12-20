@@ -1,12 +1,8 @@
 import express from "express";
 import type { Request, Response } from "express";
-import {
-  computeUserElo,
-  computeTopicElo,
-  computeTopicEloList,
-} from "../utils/elo.js";
+import { computeAggregateElo, computeElo } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
-import pool from "../db_config.js";
+import prisma from "../db_config.js";
 import type {
   Problem,
   Topic,
@@ -19,83 +15,68 @@ const router = express.Router();
 router.get("/next", async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
 
-  const [topicRows] = await pool.query(
-    `SELECT id, name, weight
-       FROM TOPICS
-       ORDER BY id`
-  );
-  const topics = topicRows as Topic[];
+  const topicElos = await prisma.topicElo.findMany({
+    where: { userId },
+    orderBy: { topicId: "asc" },
+  });
 
-  // problem history
-  const [historyRows] = await pool.query(
-    `SELECT ph.id,
-            ph.problem_id,
-            ph.is_correct,
-            ph.timestamp,
-            p.topic_id,
-            ph.problem_rating AS difficulty
-     FROM PROBLEM_HISTORY ph
-     JOIN PROBLEMS p ON ph.problem_id = p.id
-     WHERE ph.user_id = ?
-     ORDER BY ph.timestamp ASC`,
-    [userId]
-  );
-  const history = historyRows as TopicHistoryRow[];
-
-  const topicElos = topics.map((topic) => {
-    const topicHistory = history.filter((h) => h.topic_id == topic.id);
-    return computeTopicElo(userId, topicHistory);
+  const topics = await prisma.topic.findMany({
+    orderBy: { id: "asc" },
   });
 
   // select topic
-  const weights = topicElos.map((r) => 1 / r ** 2.5);
+  const weights = topicElos.map((r) => 1 / r.elo ** 2.5);
   const selectedTopicIndex = weightedChoice(weights);
 
   if (selectedTopicIndex < 0 || selectedTopicIndex >= topics.length) {
-    return res.status(404).json({ success: false, message: "Invalid topic" });
+    return res.status(500).json({ success: false, message: "Invalid topic" });
   }
 
   const selectedTopic = topics[selectedTopicIndex]!;
-  const selectedTopicElo = topicElos[selectedTopicIndex]!;
+  const selectedTopicElo = topicElos[selectedTopicIndex]!.elo;
   const selectedTopicID = selectedTopic.id;
 
   // sample problem difficulty
   const chosenDifficulty = chooseDifficulty(selectedTopicElo);
 
   // fetch the problem closest to chosenDifficulty AND include starred info
-  const [problemRows] = await pool.query(
-    `SELECT 
-        p.id,
-        p.difficulty,
-        p.topic_id AS topicId,
-        p.problem_text AS problemText,
-        p.is_frq AS isFrq,
-        p.answer_choices AS answerChoices,
-        p.image_url AS imageUrl,
-        EXISTS (
-            SELECT 1 FROM STARRED_PROBLEMS sp 
-            WHERE sp.problem_id = p.id AND sp.user_id = ?
-        ) AS starred
-     FROM PROBLEMS p
-     WHERE p.topic_id = ?
-     ORDER BY ABS(p.difficulty - ?) ASC
-     LIMIT 1`,
-    [userId, selectedTopicID, chosenDifficulty]
-  );
+  const problemRows = await prisma.$queryRaw`
+  SELECT * FROM "Problem"
+  WHERE "topicId" = ${selectedTopicID}
+  ORDER BY ABS("difficulty"::integer - ${chosenDifficulty}) ASC
+  LIMIT 1
+`;
 
-  const problems = problemRows as (Problem & { starred: boolean })[];
+  const problems = await prisma.problem.findMany({
+    where: {
+      topicId: selectedTopicID,
+    },
+    include: {
+      starredBy: {
+        where: { userId },
+      },
+    },
+  });
 
   if (problems.length === 0) {
-    return res.status(404).json({
+    return res.status(500).json({
       success: false,
       message: "No problems found for this topic",
     });
   }
 
+  const chosenProblem = problems
+    .map((p) => ({
+      ...p,
+      starred: p.starredBy.length > 0,
+      difficultyDiff: Math.abs(p.difficulty - chosenDifficulty),
+    }))
+    .sort((a, b) => a.difficultyDiff - b.difficultyDiff)[0];
+
   console.log(problems[0]);
 
   return res.status(200).json({
-    problem: problems[0],
+    problem: chosenProblem,
   });
 });
 
@@ -106,97 +87,120 @@ router.post("/submit", async (req: Request, res: Response) => {
     answerChoice: string | number;
   };
 
-  console.log("ABOUT TO RUN SQL");
-  const [results] = await pool.execute(
-    "SELECT answer_choices, difficulty, topic_id FROM PROBLEMS WHERE id=?",
-    [problemId]
-  );
+  const problem = await prisma.problem.findUnique({
+    where: { id: problemId },
+  });
 
-  const resultsArray = results as any[];
-  if (!resultsArray || resultsArray.length === 0) {
+  if (!problem) {
     return res
-      .status(404)
+      .status(500)
       .json({ success: false, message: "Problem not found" });
   }
-
-  const topic_id = resultsArray[0].topic_id;
-  const answers = resultsArray[0].answer_choices;
-  const difficulty = resultsArray[0].difficulty;
+  const answerChoices = problem.answerChoices as Record<
+    string,
+    { isCorrect: boolean; explanation: string }
+  >;
 
   let correctAnswer = false;
-  if (answerChoice in answers) {
-    correctAnswer = answers[answerChoice].isCorrect;
+  if (answerChoice in answerChoices) {
+    correctAnswer = answerChoices[answerChoice]!.isCorrect;
   }
 
   // Insert the new result
-  const [insertResult] = await pool.execute(
-    "INSERT INTO PROBLEM_HISTORY (user_id, problem_id, problem_rating, is_correct, answer_text) VALUES (?, ?, ?, ?, ?)",
-    [userId, problemId, difficulty, correctAnswer, answerChoice]
+
+  await prisma.problemHistory.create({
+    data: {
+      userId,
+      problemId,
+      problemDifficulty: problem.difficulty,
+      isCorrect: correctAnswer,
+      answerText: String(answerChoice),
+    },
+  });
+
+  //update topic elo
+  const oldTopicElo = await prisma.topicElo.findFirst({
+    where: { userId, topicId: problem.topicId },
+  });
+  if (!oldTopicElo) {
+    return res.status(500).json({
+      success: false,
+      message: "Topic ELO not found",
+    });
+  }
+  const updatedTopicElo = computeElo(
+    oldTopicElo.elo,
+    problem.difficulty,
+    correctAnswer
   );
 
-  // Get updated history AFTER adding the new attempt
-  const [updatedHistoryRows] = await pool.query(
-    `SELECT ph.id,
-              ph.problem_id,
-              ph.is_correct,
-              ph.timestamp,
-              p.topic_id,
-              ph.problem_rating AS difficulty
-       FROM PROBLEM_HISTORY ph
-       JOIN PROBLEMS p ON ph.problem_id = p.id
-       WHERE ph.user_id = ?
-       ORDER BY ph.timestamp ASC`,
-    [userId]
-  );
-  const updatedHistory = updatedHistoryRows as TopicHistoryRow[];
+  await prisma.topicElo.update({
+    where: { topicId_userId: { userId, topicId: problem.topicId } },
+    data: { elo: updatedTopicElo },
+  });
 
-  // Calculate new ELOs
-  const [topicRows] = await pool.query(
-    `SELECT id, name, weight
-       FROM TOPICS
-       ORDER BY id`
-  );
-  const topics = topicRows as Topic[];
-  const lastPhId = (insertResult as any).insertId;
+  // update overall elo
+  const topics = await prisma.topic.findMany({
+    orderBy: { id: "asc" },
+  });
 
-  console.log("problem history id:" + lastPhId);
+  const newTopicElos = await prisma.topicElo.findMany({
+    where: { userId },
+    orderBy: { topicId: "asc" },
+  });
 
-  const newTopicElos = await computeTopicEloList(userId);
   const topicEloData = topics.map((topic, index) => ({
     topicId: topic.id,
     topicName: topic.name,
-    elo: Math.round(newTopicElos[index] || 0),
+    elo: Math.round(newTopicElos[index]!.elo || 0),
   }));
 
+  const overallElo = computeAggregateElo(newTopicElos, topics);
+
   // Update streaks
-  const [existingStreak] = await pool.query(
-    `SELECT * FROM STREAKS WHERE user_id=?`,
-    [userId]
-  );
-  let streakCount;
-  if (Array.isArray(existingStreak) && existingStreak.length > 0) {
-    const streak = existingStreak[0] as Streak;
-    const updatedStreakCount = correctAnswer ? streak.current_streak + 1 : 0;
-    const longestStreak =
-      updatedStreakCount > streak.longest_streak
-        ? updatedStreakCount
-        : streak.longest_streak;
-    const [updateStreak] = await pool.query(
-      `UPDATE STREAKS 
-    SET current_streak=?, longest_streak=?, last_activity_date=NOW() WHERE user_id=?`,
-      [updatedStreakCount, longestStreak, userId]
-    );
-    streakCount = updatedStreakCount;
+  const userStreaks = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { currentStreak: true, longestStreak: true },
+  });
+  if (!userStreaks) {
+    return res.status(500).json({
+      success: false,
+      message: "User streaks not found",
+    });
+  }
+  if (correctAnswer) {
+    if (userStreaks.currentStreak + 1 > userStreaks.longestStreak) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          longestStreak: userStreaks.currentStreak + 1,
+          currentStreak: { increment: 1 },
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { currentStreak: { increment: 1 } },
+      });
+    }
+  } else {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { currentStreak: 0 },
+    });
   }
 
-  const newOverallElo = await computeUserElo(userId);
+  const newStreak = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { currentStreak: true },
+  });
 
   return res.json({
     success: true,
     topicElos: topicEloData,
-    overallElo: newOverallElo,
+    overallElo: overallElo,
     correct: correctAnswer,
-    streak: streakCount,
+    streak: newStreak?.currentStreak,
   });
 });
 
@@ -207,37 +211,46 @@ router.get("/history", async (req: Request, res: Response) => {
   }
 
   try {
-    const [rows] = await pool.query(
-      `
-      SELECT 
-          ph.id,
-          ph.problem_id AS problemId,
-          p.problem_text AS problemText,
-          p.difficulty,
-          ph.answer_text AS userAnswer,
-          ph.is_correct AS correct,
-          ph.timestamp,
-          p.answer_choices AS answerChoices,
-          EXISTS(
-              SELECT 1 FROM STARRED_PROBLEMS sp
-              WHERE sp.problem_id = ph.problem_id AND sp.user_id = ph.user_id
-          ) AS starred
-      FROM 
-          PROBLEM_HISTORY ph
-      JOIN 
-          PROBLEMS p ON ph.problem_id = p.id
-      WHERE 
-          ph.user_id = ?
-      ORDER BY 
-          ph.timestamp DESC;
-      `,
-      [userId]
-    );
+    const history = await prisma.problemHistory.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        problem: {
+          include: {
+            starredBy: {
+              where: {
+                userId: userId,
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        timestamp: "desc",
+      },
+    });
+
+    // Transform to match frontend expected format, we can change that later
+    const rows = history.map((ph) => ({
+      id: ph.id,
+      problemId: ph.problemId,
+      problemText: ph.problem.problemText,
+      difficulty: ph.problem.difficulty,
+      userAnswer: ph.answerText,
+      correct: ph.isCorrect,
+      timestamp: ph.timestamp,
+      answerChoices: ph.problem.answerChoices,
+      starred: ph.problem.starredBy.length > 0,
+    }));
 
     res.status(200).json({ history: rows });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Error fetching history" });
   }
 });
 
@@ -247,13 +260,10 @@ router.post("/star", async (req: Request, res: Response) => {
     problemId: number;
   };
   try {
-    const [starredProblem] = await pool.query(
-      `INSERT INTO STARRED_PROBLEMS (user_id, problem_id, starred_date) VALUES(?, ?, NOW());`,
-      [userId, problemId]
-    );
-    res.status(200).json({
-      success: true,
+    await prisma.starredProblem.create({
+      data: { userId, problemId },
     });
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error starring problem: ", error);
     res.status(500).json({
@@ -270,10 +280,9 @@ router.delete("/star", async (req: Request, res: Response) => {
     problemId: number;
   };
   try {
-    const [removedStar] = await pool.query(
-      `DELETE FROM STARRED_PROBLEMS WHERE user_id=? AND problem_id=?;`,
-      [userId, problemId]
-    );
+    await prisma.starredProblem.delete({
+      where: { userId_problemId: { userId, problemId } },
+    });
     res.status(200).json({
       success: true,
     });
