@@ -14,34 +14,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeUser, setWelcomeUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const userParam = urlParams.get("user");
-
-    if (userParam) {
+    useEffect(() => {
+    // Check if user just logged in (has valid auth cookie)
+    const checkAuthStatus = async () => {
       try {
-        const userInfo = JSON.parse(decodeURIComponent(userParam));
-        const user: User = {
-          id: userInfo.id,
-          username: userInfo.name || "User",
-          email: userInfo.email || "",
-          elo: userInfo.elo,
-          topicEloData: userInfo.topicEloData || [],
-          streak: userInfo.streak || 0,
-        };
+        const user = await api.getUser();
 
+        if (user) {
+        
         setWelcomeUser(user);
         setShowWelcome(true);
-        window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         setTimeout(() => {
           onLogin(user);
         }, 3000);
       } catch (err) {
-        console.error("Error parsing user data:", err);
-        setError("Failed to process login information");
+        console.log("No authenticated user found");
       }
-    }
+    };
+
+    checkAuthStatus();
   }, [onLogin]);
 
   const handleGoogleLogin = async () => {
