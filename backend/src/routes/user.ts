@@ -2,10 +2,11 @@ import express from "express";
 import type { Request, Response } from "express";
 import prisma from "../db_config.js";
 import type { Streak } from "../types/types.js";
+import { verifyToken } from "../utils/jwt.js";
 
 const router = express.Router();
 
-router.get('/longest_streak', async (req: Request, res: Response) =>{
+router.get('/longest_streak', verifyToken, async (req: Request, res: Response) =>{
     const userId = Number(req.query.userId);
 
     try {
@@ -24,7 +25,7 @@ router.get('/longest_streak', async (req: Request, res: Response) =>{
     }
 })
 
-router.delete('', async (req: Request, res: Response) =>{
+router.delete('', verifyToken, async (req: Request, res: Response) =>{
     const userId = Number(req.query.userId);
 
     try{

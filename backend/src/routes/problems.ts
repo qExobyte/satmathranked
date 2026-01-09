@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { computeAggregateElo, computeElo } from "../utils/elo.js";
 import { weightedChoice, chooseDifficulty } from "../utils/probUtils.js";
 import prisma from "../db_config.js";
+import { verifyToken } from "../utils/jwt.js";
 import type {
   Problem,
   Topic,
@@ -12,7 +13,7 @@ import type {
 
 const router = express.Router();
 
-router.get("/next", async (req: Request, res: Response) => {
+router.get("/next", verifyToken, async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
 
   const topicElos = await prisma.topicElo.findMany({
@@ -80,7 +81,7 @@ router.get("/next", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/submit", async (req: Request, res: Response) => {
+router.post("/submit", verifyToken, async (req: Request, res: Response) => {
   const { userId, problemId, answerChoice } = req.body as {
     userId: number;
     problemId: number;
@@ -204,7 +205,7 @@ router.post("/submit", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/history", async (req: Request, res: Response) => {
+router.get("/history", verifyToken, async (req: Request, res: Response) => {
   const userId = Number(req.query.userId);
   if (!userId) {
     return res.status(400).json({ error: "Missing userId" });

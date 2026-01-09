@@ -3,6 +3,7 @@ import type { User } from "./types";
 import { LoginPage } from "./components/LoginPage";
 import { ProblemPage } from "./components/ProblemPage";
 import { Moon, Sun } from "lucide-react";
+import { api } from "./services/api";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,7 +22,13 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    try {
+    api.logout();
     setUser(null);
+    }
+    catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   return (

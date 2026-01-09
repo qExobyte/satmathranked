@@ -3,6 +3,8 @@ import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import prisma from "../db_config.js";
 import type { Topic, User } from "../types/types.js";
+import { generateToken, verifyToken } from "../utils/jwt.js";
+import { verify } from "crypto";
 
 const router = express.Router();
 
@@ -77,13 +79,44 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       });
     }
 
+    const token = generateToken(user.id, user.email);
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+    res.redirect(`${process.env.FRONTEND_URL}`);
+  }
+  catch (error) {
+    console.error("Error during Google OAuth callback:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error during Google OAuth" });
+  }
+});
+
+
+router.get("/me", verifyToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
     const topicElos = await prisma.topicElo.findMany({
       where: { userId: user.id },
       include: { topic: true },
       orderBy: { topicId: "asc" },
     });
-
-
 
     const topicEloData = topicElos.map((topicElo) => ({
       topicId: topicElo.topicId,
@@ -91,33 +124,35 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       elo: Math.round(topicElo.elo || 0),
     }));
 
-
     const userInfo = {
       id: user.id,
       email: user.email,
-      name: user.username,
+      username: user.username,
       elo: user.overallElo,
       topicEloData: topicEloData,
       streak: user.currentStreak,
-
     };
 
-    // Redirect to frontend with user info (name and email)
-    //If we want we can instead make a jwt and send that if we want to do session based
-    //This is just something for now
-    res.redirect(
-      `${process.env.FRONTEND_URL}?user=${encodeURIComponent(
-        JSON.stringify(userInfo)
-      )}`
-    );
+    res.json({ success: true, user: userInfo });
   } catch (error) {
-    console.error("Error during Google authentication:", error);
-    res.status(500).json({
-      success: false,
-      message: "Authentication failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+    console.error("Error fetching user info:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch user info" 
     });
   }
 });
+
+router.post("/logout", (req: Request, res: Response) => {
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+
 
 export default router;
